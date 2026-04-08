@@ -1,25 +1,10 @@
 'use client';
 
 import React from 'react';
-import {
-  DollarSign,
-  TrendingUp,
-  Users,
-  Zap,
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  Target,
-} from 'lucide-react';
 import { useAuthContext } from '@/context/AuthContext';
-import EarningsCard from '@/components/shared/EarningsCard';
-import NBAWidget from '@/components/shared/NBAWidget';
-import RevenueWaterfall from '@/components/leader/RevenueWaterfall';
-import TeamHeatmap from '@/components/leader/TeamHeatmap';
-import MilestoneLadder from '@/components/leader/MilestoneLadder';
 
 /**
- * Leader Home Dashboard
+ * Leader Home Dashboard — Aureum Obsidian Design
  * Key metrics: earnings, team sales by level, opportunities, milestones
  */
 export default function LeaderHome() {
@@ -52,10 +37,10 @@ export default function LeaderHome() {
   const tokensPending = 18476;
 
   // Team activity heatmap data
-  const teamActivityData = Array(24).fill(null).map((_, i) => ({
+  const teamActivityData = Array(48).fill(null).map((_, i) => ({
     id: `member-${i}`,
     name: `Ambassador ${i + 1}`,
-    status: ['active', 'stalled', 'new', 'at-risk'][Math.floor(Math.random() * 4)] as any,
+    status: ['active', 'stalled', 'new', 'at-risk'][Math.floor(Math.random() * 4)] as 'active' | 'stalled' | 'new' | 'at-risk',
     salesThisMonth: Math.random() * 5000,
     recruits: Math.floor(Math.random() * 10),
   }));
@@ -68,186 +53,301 @@ export default function LeaderHome() {
     {
       id: '1',
       title: '2 people in L1 are $40 away from active',
-      icon: <AlertCircle className="h-4 w-4 text-amber-400" />,
-      action: 'Coach them to the finish line',
-      potential: '$840 in new commission',
+      icon: 'trending_up',
+      action: 'Coach them now',
+      iconBg: 'bg-secondary-container/20',
+      iconColor: 'text-secondary',
+      actionColor: 'text-secondary-fixed-dim',
     },
     {
       id: '2',
       title: '3 pending ambassadors need approval',
-      icon: <Clock className="h-4 w-4 text-blue-400" />,
-      action: 'Review and activate',
-      potential: 'New team members ready',
-    },
-    {
-      id: '3',
-      title: '5 stalled team members this month',
-      icon: <AlertCircle className="h-4 w-4 text-red-400" />,
-      action: 'Reach out with motivation',
-      potential: 'Re-engage at-risk team',
+      icon: 'person_add',
+      action: 'Review queue',
+      iconBg: 'bg-primary-container/20',
+      iconColor: 'text-primary',
+      actionColor: 'text-primary-fixed-dim',
     },
   ];
 
+  // Top performers
+  const topPerformers = [
+    { name: 'Alex Rivera', level: 'L1', units: 42, earnings: 4230, growth: '+12%' },
+    { name: 'Sarah Chen', level: 'L1', units: 38, earnings: 3890, growth: '+8%' },
+  ];
+
+  // Waterfall bar data (L1-L6)
+  const waterfallLevels = [
+    { label: 'L1', value: teamSalesByLevel[1], opacity: '' },
+    { label: 'L2', value: teamSalesByLevel[2], opacity: '/80' },
+    { label: 'L3', value: teamSalesByLevel[3], opacity: '/60' },
+    { label: 'L4', value: teamSalesByLevel[4], opacity: '/40' },
+    { label: 'L5', value: teamSalesByLevel[5], opacity: '/20' },
+    { label: 'L6', value: teamSalesByLevel[6], opacity: '/10' },
+  ];
+  const maxLevelValue = Math.max(...waterfallLevels.map(l => l.value));
+
+  // Heatmap color mapping
+  const heatmapColor = (status: string) => {
+    switch (status) {
+      case 'active': return 'bg-secondary';
+      case 'stalled': return 'bg-primary';
+      case 'new': return 'bg-tertiary';
+      case 'at-risk': return 'bg-error';
+      default: return 'bg-surface-container-highest';
+    }
+  };
+
+  // Network health score
+  const networkHealthIndex = 92;
+  const retentionRate = 94;
+  const growthRate = 14.2;
+  const circumference = 2 * Math.PI * 60; // r=60
+  const healthOffset = circumference - (networkHealthIndex / 100) * circumference;
+
+  // Horizon progress
+  const horizonProgress = 75;
+
   return (
-    <div className="space-y-6">
-      {/* Page Title */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gray-100">Leader Dashboard</h1>
-        <p className="text-gray-400">Track your team performance, earnings, and growth opportunities</p>
-      </div>
+    <div className="space-y-8">
+      {/* ── Hero Section: The Harvest ── */}
+      <section className="pt-4">
+        <p className="text-sm font-medium text-primary-fixed-dim uppercase tracking-[0.2em] mb-2">
+          The Harvest
+        </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <h2 className="text-5xl md:text-6xl font-bold text-on-surface tracking-tight">
+              ${totalTeamSales.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </h2>
+            <p className="text-secondary font-medium flex items-center gap-2 mt-2">
+              <span className="material-symbols-outlined text-sm">trending_up</span>
+              Team Revenue Growth +14.2% this month
+            </p>
+          </div>
 
-      {/* Key Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Personal Sales */}
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-5">
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-xs font-medium text-gray-400">Personal Sales (This Month)</p>
-            <DollarSign className="h-4 w-4 text-emerald-400" />
+          {/* Critical Leak Card */}
+          <div className="p-4 bg-surface-container border border-error/20 rounded-xl max-w-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 h-full bg-error" />
+            <p className="text-error text-xs font-black uppercase tracking-widest mb-1">Critical Leak</p>
+            <p className="text-on-surface font-semibold">
+              You left <span className="text-error">${totalUnclaimedValue.toLocaleString()}</span> unclaimed this month
+            </p>
+            <button className="mt-3 text-xs font-bold text-primary flex items-center gap-1 group">
+              Activate L4-L6 to unlock
+              <span className="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">
+                arrow_forward
+              </span>
+            </button>
           </div>
-          <p className="text-2xl font-bold text-emerald-400">${personalSalesThisMonth.toFixed(2)}</p>
-          <div className="mt-2 flex items-center gap-1">
-            <div className="flex-1 h-1.5 bg-gray-700/50 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-emerald-500 to-green-400"
-                style={{ width: `${Math.min(100, (personalSalesThisMonth / monthlyGoal) * 100)}%` }}
-              />
-            </div>
-            <span className="text-xs text-gray-400">{Math.round((personalSalesThisMonth / monthlyGoal) * 100)}%</span>
-          </div>
-          <p className="text-xs text-gray-500 mt-2">Goal: ${monthlyGoal.toFixed(2)}</p>
         </div>
+      </section>
 
-        {/* Total Team Sales */}
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-5">
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-xs font-medium text-gray-400">Total Team Sales</p>
-            <TrendingUp className="h-4 w-4 text-blue-400" />
+      {/* ── Dashboard Grid ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        {/* ── Waterfall Revenue Chart (lg:col-span-8) ── */}
+        <div className="lg:col-span-8 bg-surface-container-low rounded-xl p-6 flex flex-col justify-between min-h-[400px]">
+          <div>
+            <h3 className="text-lg font-semibold text-on-surface mb-1">Waterfall Revenue Contribution</h3>
+            <p className="text-sm text-on-surface-variant mb-8">
+              Performance breakdown by recruitment depth (L1 - L6)
+            </p>
           </div>
-          <p className="text-2xl font-bold text-blue-400">${totalTeamSales.toFixed(2)}</p>
-          <p className="text-xs text-gray-500 mt-3">
-            {activeCount} active • {stalledCount} stalled
-          </p>
-        </div>
-
-        {/* Commission Available */}
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-5">
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-xs font-medium text-gray-400">Commission Available</p>
-            <Zap className="h-4 w-4 text-yellow-400" />
-          </div>
-          <p className="text-2xl font-bold text-yellow-400">${commissionAvailable.toFixed(2)}</p>
-          {commissionPending > 0 && (
-            <p className="text-xs text-gray-500 mt-2">+${commissionPending.toFixed(2)} pending</p>
-          )}
-        </div>
-
-        {/* Unclaimed Value (Motivation) */}
-        <div className="rounded-xl border border-orange-500/30 bg-gradient-to-br from-orange-900/20 to-red-900/20 p-5">
-          <div className="flex items-start justify-between mb-3">
-            <p className="text-xs font-medium text-gray-400">Unclaimed Value</p>
-            <AlertCircle className="h-4 w-4 text-orange-400" />
-          </div>
-          <p className="text-2xl font-bold text-orange-400">${totalUnclaimedValue.toFixed(2)}</p>
-          <p className="text-xs text-orange-300 mt-2">Locked in L4-L6 (activate to unlock)</p>
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Sales & Earnings */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Team Sales by Level */}
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-100 flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-emerald-400" />
-              Team Sales by Level
-            </h3>
-
-            <div className="grid grid-cols-4 gap-3">
-              {Object.entries(teamSalesByLevel).map(([level, sales], idx) => (
-                <div key={level} className="rounded-lg bg-gray-700/20 p-4">
-                  <p className="text-xs font-medium text-gray-500 mb-2">
-                    {idx === 0 ? 'Personal' : `L${level}`}
-                  </p>
-                  <p className="text-lg font-bold text-emerald-400">
-                    ${(sales as number).toFixed(0)}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {((sales as number / totalTeamSales) * 100).toFixed(0)}%
-                  </p>
+          <div className="flex items-end justify-between h-48 gap-3">
+            {waterfallLevels.map((level) => {
+              const heightPct = Math.round((level.value / maxLevelValue) * 100);
+              return (
+                <div key={level.label} className="flex-1 flex flex-col items-center gap-3">
+                  <span className="font-mono text-[10px] text-primary">
+                    ${(level.value / 1000).toFixed(1)}k
+                  </span>
+                  <div
+                    className={`w-full bg-primary-container${level.opacity} rounded-t-lg`}
+                    style={{ height: `${heightPct}%` }}
+                  />
+                  <span className="text-xs font-bold text-on-surface">{level.label}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Revenue Waterfall Chart */}
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-100">Revenue Waterfall (L1-L6)</h3>
-            <RevenueWaterfall data={teamSalesByLevel} />
-          </div>
-
-          {/* Team Heatmap */}
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-            <h3 className="mb-4 text-lg font-semibold text-gray-100">Team Activity Heatmap</h3>
-            <TeamHeatmap data={teamActivityData} />
+              );
+            })}
           </div>
         </div>
 
-        {/* Right Column: Earnings & Opportunities */}
-        <div className="space-y-6">
-          {/* Earnings Card */}
-          <EarningsCard
-            availableCash={commissionAvailable}
-            pendingCash={commissionPending}
-            availableTokens={tokensAvailable}
-            pendingTokens={tokensPending}
-            holdToSaveTier={20}
-            fameBalance={324150}
-            isAmbassador={true}
-            onWithdraw={() => console.log('Withdraw')}
-            onViewDetails={() => console.log('View Details')}
-          />
-
-          {/* Help Opportunities */}
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-            <h3 className="mb-4 text-sm font-semibold text-gray-100 flex items-center gap-2">
-              <Target className="h-4 w-4 text-amber-400" />
-              Help Opportunities
-            </h3>
-
-            <div className="space-y-3">
+        {/* ── The Pulse (lg:col-span-4) ── */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="bg-surface-container rounded-xl p-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+              <span className="material-symbols-outlined text-6xl">bolt</span>
+            </div>
+            <h3 className="text-lg font-semibold text-on-surface mb-4">The Pulse</h3>
+            <div className="space-y-4">
               {opportunities.map((opp) => (
                 <div
                   key={opp.id}
-                  className="rounded-lg border border-gray-700/30 bg-gray-800/30 p-3"
+                  className="p-3 bg-surface-container-high rounded-lg flex items-start gap-3"
                 >
-                  <div className="flex items-start gap-2 mb-2">
-                    {opp.icon}
-                    <div className="flex-1">
-                      <p className="text-xs font-semibold text-gray-200">{opp.title}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{opp.action}</p>
-                    </div>
+                  <div className={`w-8 h-8 rounded-full ${opp.iconBg} flex items-center justify-center flex-shrink-0`}>
+                    <span className={`material-symbols-outlined ${opp.iconColor} text-sm`}>
+                      {opp.icon}
+                    </span>
                   </div>
-                  <p className="text-xs text-amber-300 font-medium">{opp.potential}</p>
+                  <div className="flex-1">
+                    <p className="text-xs text-on-surface">{opp.title}</p>
+                    <button className={`mt-2 text-[10px] font-bold ${opp.actionColor} uppercase tracking-wider`}>
+                      {opp.action}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* NBA Widget */}
-          <div>
-            <NBAWidget maxActions={2} title="Next Steps" />
+          {/* ── The Horizon Card ── */}
+          <div
+            className="p-6 rounded-xl relative overflow-hidden group transition-all cursor-pointer"
+            style={{ background: 'radial-gradient(circle at top left, #2f3542 0%, #1a202c 100%)' }}
+          >
+            <div className="absolute inset-0 bg-surface-tint/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10">
+              <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-2">
+                The Horizon
+              </p>
+              <h4 className="text-lg font-bold text-on-surface mb-1">Platinum Executive</h4>
+              <p className="text-sm text-on-surface-variant mb-4">
+                Unlock $5,000 monthly bonus and private concierge.
+              </p>
+              <div className="w-full h-1.5 bg-surface-container-low rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full"
+                  style={{ width: `${horizonProgress}%` }}
+                />
+              </div>
+              <p className="text-[10px] font-mono text-on-surface-variant mt-2 text-right">
+                {horizonProgress}% Complete
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Milestone Ladder */}
-      <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-        <h3 className="mb-6 text-lg font-semibold text-gray-100 flex items-center gap-2">
-          <Target className="h-5 w-5 text-amber-400" />
-          Rank & Milestone Tracker
-        </h3>
-        <MilestoneLadder currentRank={leaderRank} />
+        {/* ── Team Activity Heatmap (lg:col-span-12) ── */}
+        <div className="lg:col-span-12 bg-surface-container-low rounded-xl p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+            <div>
+              <h3 className="text-lg font-semibold text-on-surface">Team Activity Network</h3>
+              <p className="text-sm text-on-surface-variant">
+                Real-time engagement density across your network
+              </p>
+            </div>
+            <div className="flex items-center gap-4 text-[10px] font-bold tracking-wider uppercase">
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-secondary" /> Active
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-primary" /> Stalled
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-tertiary" /> New
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-3 rounded-sm bg-error" /> At-Risk
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-12 md:grid-cols-24 gap-2">
+            {teamActivityData.map((member) => (
+              <div
+                key={member.id}
+                title={`${member.name} — ${member.status}`}
+                className={`w-full aspect-square rounded-sm ${heatmapColor(member.status)}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ── Top Performers (lg:col-span-7) ── */}
+        <div className="lg:col-span-7 bg-surface-container-low rounded-xl p-6">
+          <h3 className="text-lg font-semibold text-on-surface mb-6">Top Performers (L1)</h3>
+          <div className="space-y-4">
+            {topPerformers.map((performer) => (
+              <div
+                key={performer.name}
+                className="flex items-center justify-between p-4 bg-surface-container rounded-lg group hover:bg-surface-container-high transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center">
+                    <span className="text-sm font-bold text-on-surface">
+                      {performer.name.split(' ').map(n => n[0]).join('')}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-on-surface">{performer.name}</p>
+                    <p className="font-mono text-[10px] text-on-surface-variant tracking-wider uppercase">
+                      {performer.level} &bull; {performer.units} Units
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-secondary font-bold">
+                    ${performer.earnings.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant">{performer.growth}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Network Health (lg:col-span-5) ── */}
+        <div className="lg:col-span-5 glass-panel rounded-xl p-6 flex flex-col justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-on-surface mb-2">Network Health</h3>
+            <p className="text-sm text-on-surface-variant">
+              System-wide performance index for your organization.
+            </p>
+          </div>
+          <div className="py-6 flex items-center justify-center">
+            <div className="relative w-32 h-32">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  className="text-surface-container-low"
+                  cx="64" cy="64" r="60"
+                  fill="transparent"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                />
+                <circle
+                  className="text-primary"
+                  cx="64" cy="64" r="60"
+                  fill="transparent"
+                  stroke="currentColor"
+                  strokeWidth="8"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={healthOffset}
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <span className="text-2xl font-black text-on-surface">{networkHealthIndex}</span>
+                <span className="text-[10px] font-bold text-on-surface-variant tracking-widest uppercase">
+                  Index
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="p-3 bg-surface-container rounded-lg">
+              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                Retention
+              </p>
+              <p className="font-mono text-lg font-bold text-on-surface">{retentionRate}%</p>
+            </div>
+            <div className="p-3 bg-surface-container rounded-lg">
+              <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider mb-1">
+                Growth
+              </p>
+              <p className="font-mono text-lg font-bold text-on-surface">{growthRate}%</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

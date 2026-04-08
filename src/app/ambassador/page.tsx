@@ -3,20 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
-import EarningsCard from '@/components/shared/EarningsCard';
-import ProgressRing from '@/components/shared/ProgressRing';
-import NBAWidget from '@/components/shared/NBAWidget';
-import ShareCard from '@/components/ambassador/ShareCard';
-import LevelBreakdown from '@/components/ambassador/LevelBreakdown';
-import MissionChecklist from '@/components/ambassador/MissionChecklist';
-import MonthlyForecast from '@/components/ambassador/MonthlyForecast';
 import {
+  Copy,
+  Check,
+  Star,
+  UserPlus,
+  Megaphone,
+  CalendarDays,
   Zap,
-  TrendingUp,
-  Users,
-  Gift,
-  Target,
-  Calendar,
+  Lock,
 } from 'lucide-react';
 import { PLATFORM_CONFIG } from '@/types';
 
@@ -54,6 +49,7 @@ export default function AmbassadorPage() {
     newRecruitsThisWeek: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!user || role !== 'ambassador') return;
@@ -163,7 +159,7 @@ export default function AmbassadorPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -189,6 +185,7 @@ export default function AmbassadorPage() {
   // Days elapsed in current month
   const now = new Date();
   const daysElapsed = now.getDate();
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
   // Current month earnings (available + pending)
   const currentMonthEarnings = stats.availableCash + stats.pendingCash;
@@ -232,194 +229,370 @@ export default function AmbassadorPage() {
     },
   ];
 
+  const completedMissions = missions.filter((m) => m.completed).length;
   const salesAwayFromActive = Math.max(0, PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT - personalSales);
-  const nextMilestoneLabel = isActive ? 'Monthly Active Status' : 'L4-L6 Commission Unlock';
+
+  // Progress ring SVG math
+  const ringRadius = 70;
+  const ringCircumference = 2 * Math.PI * ringRadius;
+  const ringOffset = ringCircumference - (activeRequirementPercent / 100) * ringCircumference;
+
+  // Monthly forecast calculations
+  const dailyRate = daysElapsed > 0 ? currentMonthEarnings / daysElapsed : 0;
+  const conservativeEstimate = dailyRate * daysInMonth * 0.7;
+  const likelyEstimate = dailyRate * daysInMonth;
+  const optimisticEstimate = dailyRate * daysInMonth * 1.4;
+  const maxEstimate = Math.max(optimisticEstimate, 1);
+
+  // Compensation roadmap mock data (levels L1-L4)
+  const compLevels = [
+    { level: 'Level 1', team: totalRecruits, active: Math.floor(totalRecruits * 0.67), earnings: stats.availableCash * 0.5, rate: '15.0%', unlocked: true },
+    { level: 'Level 2', team: totalRecruits * 3, active: Math.floor(totalRecruits * 3 * 0.57), earnings: stats.availableCash * 0.3, rate: '7.5%', unlocked: true },
+    { level: 'Level 3', team: totalRecruits * 8, active: Math.floor(totalRecruits * 8 * 0.41), earnings: stats.availableCash * 0.15, rate: '3.0%', unlocked: true },
+    { level: 'Level 4', team: '--', active: '--', earnings: 0, rate: '1.5%', unlocked: isActive },
+  ];
+
+  const handleCopyCode = () => {
+    navigator.clipboard.writeText(referralCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Hero Card - Motivational CTA */}
-      <div className="relative overflow-hidden rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-950/30 to-yellow-950/20 p-8">
-        <div className="absolute -right-32 -top-32 h-64 w-64 rounded-full bg-gradient-to-br from-amber-500/10 to-transparent blur-3xl" />
-
-        <div className="relative z-10">
-          {isActive ? (
-            <>
-              <div className="mb-4 inline-block rounded-full bg-emerald-500/20 px-4 py-2">
-                <p className="text-xs font-semibold text-emerald-300">ACTIVE THIS MONTH</p>
+    <div className="space-y-12">
+      {/* ── Row 1: Hero Card ── */}
+      <section className="relative overflow-hidden rounded-xl bg-surface-container-low p-8 border border-outline-variant/10">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/10 to-transparent pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="max-w-2xl">
+            {isFounder && (
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary-container/20 text-primary-fixed rounded-full mb-6">
+                <Star className="h-4 w-4 fill-current" />
+                <span className="text-xs font-bold tracking-widest uppercase">
+                  FOUNDER {PLATFORM_CONFIG.FOUNDER_BOOST_MULTIPLIER}x
+                </span>
               </div>
-              <h2 className="mb-3 text-3xl font-bold text-gray-100">
-                You're <span className="text-emerald-300">Active</span> — all 7 tiers unlocked!
-              </h2>
-              <p className="mb-6 max-w-2xl text-gray-300">
-                You've hit ${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT} in personal sales. Tiers 4-6 are earning for you. Keep pushing!
+            )}
+            <h2 className="text-[28px] font-bold text-on-surface leading-tight mb-4">
+              {isActive
+                ? "You've hit Active status -- all tiers unlocked!"
+                : `You are $${salesAwayFromActive.toFixed(0)} away from your next milestone!`}
+            </h2>
+            <p className="text-on-surface-variant text-lg leading-relaxed">
+              {isActive
+                ? `You've reached $${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT} in personal sales. Tiers 4-6 are earning for you.`
+                : `Hit $${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT} personal sales to unlock L4-L6 commissions!`}
+            </p>
+            {isFounder && founderBoostEnds && (
+              <p className="mt-3 text-xs text-on-surface-variant">
+                Founder boost ends: <span className="font-semibold text-primary">{founderBoostEnds}</span>
               </p>
-            </>
-          ) : (
-            <>
-              <div className="mb-4 inline-block rounded-full bg-amber-500/20 px-4 py-2">
-                <p className="text-xs font-semibold text-amber-300">ALMOST THERE</p>
-              </div>
-              <h2 className="mb-3 text-3xl font-bold text-gray-100">
-                You're{' '}
-                <span className="text-amber-300">${salesAwayFromActive.toFixed(2)} away</span> from{' '}
-                <span className="text-emerald-400">{nextMilestoneLabel}</span>
-              </h2>
-              <p className="mb-6 max-w-2xl text-gray-300">
-                Hit ${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT} in personal sales to unlock Tiers 4-6 commissions across your entire network.
-              </p>
-            </>
-          )}
-
-          <button className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-3 font-semibold text-gray-900 transition-all duration-200 hover:from-amber-600 hover:to-yellow-500 shadow-lg">
-            <Zap className="h-5 w-5" />
-            {isActive ? 'View Earnings' : 'Push for the Milestone'}
-          </button>
-        </div>
-      </div>
-
-      {/* Top Row: Earnings & Active Requirement */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <EarningsCard
-            availableCash={stats.availableCash}
-            pendingCash={stats.pendingCash}
-            availableTokens={stats.availableTokens}
-            pendingTokens={stats.pendingTokens}
-            holdToSaveTier={20}
-            fameBalance={stats.availableTokens}
-            isAmbassador={true}
-            onWithdraw={() => console.log('Withdraw clicked')}
-            onViewDetails={() => console.log('View details clicked')}
-          />
-        </div>
-
-        <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6 flex flex-col items-center justify-center">
-          <p className="mb-4 text-xs font-medium text-gray-500 text-center">
-            Monthly Active Requirement
-          </p>
-          <ProgressRing
-            progress={activeRequirementPercent}
-            size={140}
-            color="emerald"
-            label={isActive ? 'Active!' : 'Active'}
-            sublabel="This Month"
-            showPercentage={true}
-          />
-          <p className="mt-4 text-center text-xs text-gray-400">
-            <span className="font-semibold text-emerald-400">
-              ${personalSales.toFixed(2)}
-            </span>
-            {' '}of{' '}
-            <span className="font-semibold">
-              ${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT.toFixed(2)}
-            </span>
-          </p>
-          <p className="mt-2 text-xs text-gray-500 text-center">
-            {isActive
-              ? 'Tiers 4-6 unlocked!'
-              : `$${(PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT - personalSales).toFixed(2)} to unlock L4-L6 commissions!`}
-          </p>
-        </div>
-      </div>
-
-      {/* Second Row: Share Card & Stats */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <ShareCard
-          value={referralCode}
-          type="code"
-          label="Your Referral Code"
-          usageCount={0}
-          description="Share this code to earn commissions"
-          onCopy={(code) => navigator.clipboard.writeText(code)}
-        />
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-4">
-            <p className="mb-3 flex items-center gap-2 text-xs font-medium text-gray-500">
-              <TrendingUp className="h-4 w-4 text-emerald-400" />
-              Direct Orders Today
-            </p>
-            <p className="text-2xl font-bold text-emerald-400">
-              {stats.directOrdersToday}
-            </p>
-            <p className="mt-2 text-xs text-gray-500">orders placed</p>
+            )}
           </div>
-
-          <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-4">
-            <p className="mb-3 flex items-center gap-2 text-xs font-medium text-gray-500">
-              <Users className="h-4 w-4 text-amber-400" />
-              Total Recruits
-            </p>
-            <p className="text-2xl font-bold text-amber-400">
-              {totalRecruits}
-            </p>
-            <p className="mt-2 text-xs text-gray-500">in your network</p>
-          </div>
-
-          <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-4">
-            <p className="mb-3 flex items-center gap-2 text-xs font-medium text-gray-500">
-              <Gift className="h-4 w-4 text-yellow-400" />
-              New Customers
-            </p>
-            <p className="text-2xl font-bold text-yellow-400">
-              +{stats.newCustomersThisWeek}
-            </p>
-            <p className="mt-2 text-xs text-gray-500">this week</p>
-          </div>
-
-          <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-4">
-            <p className="mb-3 flex items-center gap-2 text-xs font-medium text-gray-500">
-              <Target className="h-4 w-4 text-purple-400" />
-              New Recruits
-            </p>
-            <p className="text-2xl font-bold text-purple-400">
-              +{stats.newRecruitsThisWeek}
-            </p>
-            <p className="mt-2 text-xs text-gray-500">this week</p>
-          </div>
-        </div>
-      </div>
-
-      {/* NBA Widget */}
-      <div>
-        <NBAWidget maxActions={3} showTitle={true} />
-      </div>
-
-      {/* Forecast */}
-      <MonthlyForecast
-        currentMonthEarnings={currentMonthEarnings}
-        daysElapsed={daysElapsed}
-        daysInMonth={new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}
-      />
-
-      {/* Mission Checklist */}
-      <MissionChecklist
-        missions={missions}
-        onAllComplete={() => console.log('All missions completed!')}
-      />
-
-      {/* Founder Badge */}
-      {isFounder && (
-        <div className="relative overflow-hidden rounded-lg border border-amber-500/50 bg-gradient-to-br from-amber-950/50 to-yellow-950/30 p-6">
-          <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/20 to-transparent blur-3xl" />
-
-          <div className="relative z-10 flex items-start gap-4">
-            <div className="text-3xl">👑</div>
-            <div>
-              <h3 className="font-bold text-amber-300">Founder Status Active</h3>
-              <p className="mt-1 text-sm text-gray-300">
-                You're earning <span className="font-semibold text-amber-300">{PLATFORM_CONFIG.FOUNDER_BOOST_MULTIPLIER}x tokens</span> on all
-                direct sales! This is an exclusive benefit for our founding ambassadors.
-              </p>
-              {founderBoostEnds && (
-                <p className="mt-3 text-xs text-amber-200/70">
-                  Founder boost ends: <span className="font-semibold">{founderBoostEnds}</span>
-                </p>
-              )}
+          {/* Progress Ring */}
+          <div className="relative flex items-center justify-center flex-shrink-0">
+            <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 160 160">
+              <circle
+                className="text-surface-container-highest"
+                cx="80"
+                cy="80"
+                r={ringRadius}
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="12"
+              />
+              <circle
+                className="text-primary"
+                cx="80"
+                cy="80"
+                r={ringRadius}
+                fill="transparent"
+                stroke="currentColor"
+                strokeWidth="12"
+                strokeLinecap="round"
+                strokeDasharray={ringCircumference}
+                strokeDashoffset={ringOffset}
+                style={{ filter: 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.3))' }}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-black text-primary">
+                ${personalSales.toFixed(0)}
+              </span>
+              <span className="text-[10px] uppercase tracking-tighter text-on-surface-variant font-mono">
+                of ${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT}
+              </span>
             </div>
           </div>
         </div>
-      )}
+      </section>
+
+      {/* ── Row 2: Earnings Grid ── */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-surface-container p-6 rounded-xl transition-all hover:translate-y-[-2px]">
+          <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">Available Cash</p>
+          <span className="text-3xl font-bold text-secondary">
+            ${stats.availableCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-surface-container p-6 rounded-xl transition-all hover:translate-y-[-2px]">
+          <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">Pending Cash</p>
+          <span className="text-3xl font-bold text-primary-fixed-dim">
+            ${stats.pendingCash.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-surface-container p-6 rounded-xl transition-all hover:translate-y-[-2px]">
+          <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">Available $FAME</p>
+          <span className="text-3xl font-bold text-primary">
+            {stats.availableTokens.toLocaleString()}
+          </span>
+        </div>
+        <div className="bg-surface-container p-6 rounded-xl transition-all hover:translate-y-[-2px]">
+          <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wider mb-2">Pending $FAME</p>
+          <span className="text-3xl font-bold text-primary-fixed-dim">
+            {stats.pendingTokens.toLocaleString()}
+          </span>
+        </div>
+      </section>
+
+      {/* ── Row 3: Two-column layout ── */}
+      <section className="grid grid-cols-1 lg:grid-cols-10 gap-8">
+        {/* Left Column (60%) */}
+        <div className="lg:col-span-6 space-y-8">
+          {/* Referral Code Card */}
+          <div className="bg-surface-container-low p-8 rounded-xl border border-outline-variant/10">
+            <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+              <div className="space-y-4 text-center md:text-left">
+                <h3 className="text-lg font-semibold text-on-surface">Your Ambassador Portal</h3>
+                <div className="flex items-center gap-2 p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/20">
+                  <span className="font-mono text-xl tracking-widest text-primary px-4">
+                    {referralCode || '------'}
+                  </span>
+                  <button
+                    onClick={handleCopyCode}
+                    className="p-2 hover:bg-surface-container rounded transition-colors text-on-surface-variant"
+                  >
+                    {copied ? <Check className="h-4 w-4 text-secondary" /> : <Copy className="h-4 w-4" />}
+                  </button>
+                </div>
+                <p className="text-xs text-on-surface-variant">
+                  Share your code to earn 15% commissions on all direct sales.
+                </p>
+              </div>
+              {/* QR Placeholder */}
+              <div className="p-3 bg-white rounded-lg shadow-xl shadow-black/40">
+                <div className="w-32 h-32 bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                  QR Code
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Compensation Roadmap Table */}
+          <div className="bg-surface-container rounded-xl overflow-hidden shadow-lg shadow-black/20">
+            <div className="px-6 py-4 bg-surface-container-high flex justify-between items-center">
+              <h3 className="font-semibold text-on-surface">Compensation Roadmap</h3>
+              <span className="text-xs font-mono text-primary uppercase">Direct &amp; Team</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/10">
+                    <th className="px-6 py-4 font-bold">Level</th>
+                    <th className="px-6 py-4 font-bold">Team</th>
+                    <th className="px-6 py-4 font-bold">Active</th>
+                    <th className="px-6 py-4 font-bold">Earnings</th>
+                    <th className="px-6 py-4 font-bold text-right">Rate</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm divide-y divide-outline-variant/5">
+                  {compLevels.map((row) => (
+                    <tr
+                      key={row.level}
+                      className={`hover:bg-surface-container-high/50 transition-colors ${
+                        !row.unlocked ? 'opacity-50 bg-surface-container-lowest/30' : ''
+                      }`}
+                    >
+                      <td className={`px-6 py-4 font-bold ${row.unlocked ? 'text-secondary' : ''}`}>
+                        {row.level}
+                      </td>
+                      <td className="px-6 py-4">{row.team}</td>
+                      <td className="px-6 py-4">{row.active}</td>
+                      <td className="px-6 py-4">
+                        ${typeof row.earnings === 'number' ? row.earnings.toFixed(2) : '0.00'}
+                      </td>
+                      <td className={`px-6 py-4 text-right font-mono ${row.unlocked ? 'text-primary' : ''}`}>
+                        {row.rate}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Monthly Forecast Bar Chart */}
+          <div className="bg-surface-container-low p-6 rounded-xl">
+            <h3 className="text-lg font-semibold text-on-surface mb-6">Monthly Forecast</h3>
+            <div className="flex items-end gap-4 h-48 px-4">
+              {/* Conservative */}
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div
+                  className="w-full bg-surface-container-high rounded-t-lg transition-all hover:bg-surface-variant"
+                  style={{ height: `${Math.max(10, (conservativeEstimate / maxEstimate) * 100)}%` }}
+                />
+                <span className="text-[10px] uppercase tracking-tighter text-on-surface-variant text-center">
+                  Conservative
+                </span>
+                <span className="text-xs font-mono text-on-surface-variant">
+                  ${conservativeEstimate.toFixed(0)}
+                </span>
+              </div>
+              {/* Likely */}
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div
+                  className="w-full bg-primary/40 rounded-t-lg transition-all hover:bg-primary/60"
+                  style={{ height: `${Math.max(10, (likelyEstimate / maxEstimate) * 100)}%` }}
+                />
+                <span className="text-[10px] uppercase tracking-tighter text-on-surface-variant text-center">
+                  Likely
+                </span>
+                <span className="text-xs font-mono text-on-surface-variant">
+                  ${likelyEstimate.toFixed(0)}
+                </span>
+              </div>
+              {/* Optimistic */}
+              <div className="flex-1 flex flex-col items-center gap-2">
+                <div
+                  className="w-full bg-primary rounded-t-lg transition-all hover:brightness-110 shadow-[0_0_20px_rgba(245,158,11,0.2)]"
+                  style={{ height: `${Math.max(10, (optimisticEstimate / maxEstimate) * 100)}%` }}
+                />
+                <span className="text-[10px] uppercase tracking-tighter text-primary font-bold text-center">
+                  Optimistic
+                </span>
+                <span className="text-xs font-mono text-primary">
+                  ${optimisticEstimate.toFixed(0)}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (40%) */}
+        <div className="lg:col-span-4 space-y-8">
+          {/* Momentum Tracker (NBA Cards) */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" />
+              Momentum Tracker
+            </h3>
+            {/* NBA 1 - Priority */}
+            <div className="bg-surface-container-high p-4 rounded-lg border-l-4 border-primary shadow-lg shadow-black/20 flex items-start gap-4">
+              <div className="bg-primary/10 p-2 rounded text-primary">
+                <UserPlus className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-on-surface text-sm">Onboard 3 Directs</h4>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  {isFounder
+                    ? `Unlock Founder bonus +$250 this month.`
+                    : `Build your team to unlock deeper commissions.`}
+                </p>
+              </div>
+            </div>
+            {/* NBA 2 */}
+            <div className="bg-surface-container p-4 rounded-lg flex items-start gap-4 hover:bg-surface-container-high transition-colors cursor-pointer">
+              <div className="bg-secondary/10 p-2 rounded text-secondary">
+                <Megaphone className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-on-surface text-sm">Post Content Blast</h4>
+                <p className="text-xs text-on-surface-variant mt-1">Brand assets updated for TikTok/IG.</p>
+              </div>
+            </div>
+            {/* NBA 3 */}
+            <div className="bg-surface-container p-4 rounded-lg flex items-start gap-4 hover:bg-surface-container-high transition-colors cursor-pointer">
+              <div className="bg-on-tertiary-container/10 p-2 rounded text-tertiary">
+                <CalendarDays className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-on-surface text-sm">Strategy Call</h4>
+                <p className="text-xs text-on-surface-variant mt-1">RSVP for Tuesday&apos;s Leadership Summit.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Mission Progress Checklist */}
+          <div className="bg-surface-container-low rounded-xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-semibold text-on-surface">Mission Progress</h3>
+              <span className="text-xs font-mono bg-surface-container px-2 py-1 rounded">
+                {completedMissions} / {missions.length} Complete
+              </span>
+            </div>
+            <div className="space-y-4">
+              {missions.map((mission) => (
+                <div key={mission.id} className="flex items-center gap-3">
+                  {mission.completed ? (
+                    <div className="w-5 h-5 rounded-full bg-secondary text-surface flex items-center justify-center">
+                      <Check className="h-3 w-3 font-bold" />
+                    </div>
+                  ) : (
+                    <div className="w-5 h-5 rounded-full border-2 border-outline-variant flex items-center justify-center" />
+                  )}
+                  <span className={`text-sm ${mission.completed ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                    {mission.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Today's Stats Mini-Cards (2x2 grid) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-surface-container p-4 rounded-lg text-center">
+              <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">Direct Sales</p>
+              <p className="text-xl font-black text-on-surface">
+                ${personalSales.toFixed(0)}
+              </p>
+            </div>
+            <div className="bg-surface-container p-4 rounded-lg text-center">
+              <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">Orders Today</p>
+              <p className="text-xl font-black text-on-surface">
+                {stats.directOrdersToday}
+              </p>
+            </div>
+            <div className="bg-surface-container p-4 rounded-lg text-center">
+              <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">New Customers</p>
+              <p className="text-xl font-black text-on-surface">
+                +{stats.newCustomersThisWeek}
+              </p>
+            </div>
+            <div className="bg-surface-container p-4 rounded-lg text-center">
+              <p className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-1">Recruits</p>
+              <p className="text-xl font-black text-on-surface">
+                {totalRecruits}
+              </p>
+            </div>
+          </div>
+
+          {/* What Unlocks - Horizon Card */}
+          <div className="relative overflow-hidden rounded-xl p-6 bg-surface-container bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-surface-container-highest to-surface-container group">
+            <div className="absolute inset-0 bg-surface-tint/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+            <div className="flex items-center gap-4 relative z-10">
+              <Lock className="h-5 w-5 text-primary-fixed-dim" />
+              <div>
+                <h4 className="text-sm font-bold text-on-surface">What Unlocks</h4>
+                <p className="text-xs text-on-surface-variant">
+                  {isActive
+                    ? 'Private Equity Pool at L6'
+                    : `L4-L6 Commissions at $${PLATFORM_CONFIG.ACTIVE_REQUIREMENT_AMOUNT} personal sales`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

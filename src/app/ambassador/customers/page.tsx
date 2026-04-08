@@ -43,45 +43,45 @@ export default function CustomersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-100">Customers</h1>
-        <p className="mt-2 text-gray-400">Manage and track your customer base</p>
+        <h1 className="text-3xl font-bold text-on-surface">Customers</h1>
+        <p className="mt-2 text-on-surface-variant">Manage and track your customer base</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4">
+        <div className="rounded-lg border border-secondary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Active Customers</p>
-          <p className="mt-2 text-2xl font-bold text-emerald-400">{segmentStats.active}</p>
+          <p className="mt-2 text-2xl font-bold text-secondary">{segmentStats.active}</p>
         </div>
-        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4">
+        <div className="rounded-lg border border-primary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">New This Month</p>
-          <p className="mt-2 text-2xl font-bold text-amber-400">{segmentStats.new}</p>
+          <p className="mt-2 text-2xl font-bold text-primary-fixed-dim">{segmentStats.new}</p>
         </div>
-        <div className="rounded-lg border border-orange-500/30 bg-orange-950/20 p-4">
+        <div className="rounded-lg border border-orange-500/30 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Lapsed (30+ days)</p>
           <p className="mt-2 text-2xl font-bold text-orange-400">{segmentStats.lapsed}</p>
         </div>
       </div>
 
       {/* Top Customers */}
-      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-100">
-          <TrendingUp className="h-5 w-5 text-amber-400" />
+      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-6">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-on-surface">
+          <TrendingUp className="h-5 w-5 text-primary-fixed-dim" />
           Top Customers
         </h2>
         <div className="space-y-3">
           {topCustomers.map((customer, index) => (
-            <div key={customer.id} className="flex items-center justify-between rounded-lg bg-gray-900/50 p-3">
+            <div key={customer.id} className="flex items-center justify-between rounded-lg bg-surface-container p-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary-fixed-dim">
                   #{index + 1}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-200">{customer.name}</p>
+                  <p className="font-medium text-on-surface">{customer.name}</p>
                   <p className="text-xs text-gray-500">{customer.orders} orders</p>
                 </div>
               </div>
-              <p className="font-bold text-yellow-400">{customer.tokensEarned} tokens</p>
+              <p className="font-bold text-primary">{customer.tokensEarned} tokens</p>
             </div>
           ))}
         </div>
@@ -96,7 +96,7 @@ export default function CustomersPage() {
             placeholder="Search customers..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-gray-700/50 bg-gray-800/50 py-2.5 pl-10 pr-4 text-sm text-gray-200 placeholder-gray-500 focus:border-amber-500/50 focus:outline-none"
+            className="w-full rounded-lg border border-outline-variant/10 bg-surface-container py-2.5 pl-10 pr-4 text-sm text-on-surface placeholder-gray-500 focus:border-primary focus:outline-none"
           />
         </div>
 
@@ -107,8 +107,8 @@ export default function CustomersPage() {
               onClick={() => setFilterSegment(segment)}
               className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
                 filterSegment === segment
-                  ? 'bg-amber-500 text-gray-900'
-                  : 'bg-gray-700/50 text-gray-300 hover:bg-gray-600/50'
+                  ? 'bg-primary-container text-on-primary'
+                  : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-highest/80'
               }`}
             >
               {segment === 'all' && 'All'}
@@ -121,40 +121,40 @@ export default function CustomersPage() {
       </div>
 
       {/* Customer List */}
-      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 overflow-hidden">
+      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-900/50">
-              <tr className="border-b border-gray-700/30">
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400">Name</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-400">Orders</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400">Last Order</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-400">Tokens Earned</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-400">Status</th>
+            <thead className="bg-surface-container">
+              <tr className="border-b border-outline-variant/10">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">Name</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Orders</th>
+                <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">Last Order</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">Tokens Earned</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Status</th>
               </tr>
             </thead>
             <tbody>
               {filteredCustomers.map((customer) => (
-                <tr key={customer.id} className="border-b border-gray-700/20 hover:bg-gray-800/50 transition-all">
+                <tr key={customer.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low transition-all">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-gray-200">{customer.name}</p>
+                    <p className="font-medium text-on-surface">{customer.name}</p>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <p className="font-semibold text-gray-200">{customer.orders}</p>
+                    <p className="font-semibold text-on-surface">{customer.orders}</p>
                   </td>
                   <td className="px-6 py-4">
-                    <p className="text-sm text-gray-400">{customer.lastOrder}</p>
+                    <p className="text-sm text-on-surface-variant">{customer.lastOrder}</p>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="font-bold text-yellow-400">{customer.tokensEarned}</p>
+                    <p className="font-bold text-primary">{customer.tokensEarned}</p>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         customer.segment === 'active'
-                          ? 'bg-emerald-500/20 text-emerald-300'
+                          ? 'bg-secondary/20 text-secondary'
                           : customer.segment === 'new'
-                          ? 'bg-blue-500/20 text-blue-300'
+                          ? 'bg-tertiary/20 text-tertiary'
                           : 'bg-orange-500/20 text-orange-300'
                       }`}
                     >
@@ -171,8 +171,8 @@ export default function CustomersPage() {
       </div>
 
       {filteredCustomers.length === 0 && (
-        <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-8 text-center">
-          <p className="text-gray-400">No customers found</p>
+        <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-8 text-center">
+          <p className="text-on-surface-variant">No customers found</p>
         </div>
       )}
     </div>

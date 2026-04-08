@@ -117,7 +117,7 @@ export default function DataTable<T extends { id?: string }>({
     <div className="space-y-4">
       {/* Search & Filters */}
       {(searchKeys.length > 0 || filterOptions.length > 0) && (
-        <div className="space-y-3 rounded-lg border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="space-y-3 rounded-lg border border-outline-variant/10 bg-surface-container p-4">
           {/* Search */}
           {searchKeys.length > 0 && (
             <div className="relative">
@@ -130,7 +130,7 @@ export default function DataTable<T extends { id?: string }>({
                   setSearchQuery(e.target.value);
                   setCurrentPage(0);
                 }}
-                className="w-full rounded-lg border border-gray-700/50 bg-gray-900/50 py-2 pl-10 pr-4 text-sm text-gray-100 placeholder-gray-500 focus:border-amber-500/50 focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                className="w-full rounded-lg border border-outline-variant/10 bg-surface-container-low/50 py-2 pl-10 pr-4 text-sm text-on-surface placeholder-gray-500 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
               />
             </div>
           )}
@@ -146,8 +146,8 @@ export default function DataTable<T extends { id?: string }>({
                       onClick={() => toggleFilter(filter.key, option.value)}
                       className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                         activeFilters[filter.key] === option.value
-                          ? 'bg-amber-500 text-gray-900'
-                          : 'border border-gray-700/50 bg-gray-800/30 text-gray-400 hover:text-gray-200'
+                          ? 'bg-primary-container text-on-primary'
+                          : 'border border-outline-variant/10 bg-surface-container text-gray-500 hover:text-on-surface-variant'
                       }`}
                     >
                       {option.label}
@@ -161,27 +161,27 @@ export default function DataTable<T extends { id?: string }>({
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30">
+      <div className="overflow-x-auto rounded-lg border border-outline-variant/10 bg-gradient-to-br from-surface-container/50 to-surface-container-low/30">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700/30 bg-gray-800/50">
+            <tr className="border-b border-outline-variant/10 bg-surface-container-high">
               {columns.map((column) => (
                 <th
                   key={String(column.key)}
-                  className="px-4 py-3 text-left font-semibold text-gray-400"
+                  className="px-4 py-3 text-left font-semibold text-gray-500"
                   style={{ width: column.width }}
                 >
                   {column.sortable ? (
                     <button
                       onClick={() => handleSort(column.key)}
-                      className="flex items-center gap-2 hover:text-gray-300 transition-colors"
+                      className="flex items-center gap-2 hover:text-on-surface-variant transition-colors"
                     >
                       {column.label}
                       {sortKey === column.key &&
                         (sortOrder === 'asc' ? (
-                          <ChevronUp className="h-4 w-4" />
+                          <ChevronUp className="h-4 w-4 text-primary" />
                         ) : (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-4 w-4 text-primary" />
                         ))}
                     </button>
                   ) : (
@@ -190,7 +190,7 @@ export default function DataTable<T extends { id?: string }>({
                 </th>
               ))}
               {actions && actions.length > 0 && (
-                <th className="px-4 py-3 text-right font-semibold text-gray-400">Actions</th>
+                <th className="px-4 py-3 text-right font-semibold text-gray-500">Actions</th>
               )}
             </tr>
           </thead>
@@ -199,12 +199,12 @@ export default function DataTable<T extends { id?: string }>({
               <tr
                 key={row.id || idx}
                 onClick={() => onRowClick?.(row)}
-                className={`border-b border-gray-700/30 ${
-                  onRowClick ? 'hover:bg-gray-800/50 cursor-pointer' : ''
+                className={`border-b border-outline-variant/10 ${
+                  onRowClick ? 'hover:bg-surface-container-high/50 cursor-pointer' : ''
                 } transition-colors`}
               >
                 {columns.map((column) => (
-                  <td key={String(column.key)} className="px-4 py-3 text-gray-300">
+                  <td key={String(column.key)} className="px-4 py-3 text-on-surface-variant">
                     {column.render
                       ? column.render(row[column.key], row)
                       : String(row[column.key])}
@@ -224,8 +224,8 @@ export default function DataTable<T extends { id?: string }>({
                             action.variant === 'danger'
                               ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
                               : action.variant === 'secondary'
-                              ? 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50'
-                              : 'bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+                              ? 'bg-surface-container-high/30 text-on-surface-variant hover:bg-surface-container-high/50'
+                              : 'bg-primary/20 text-primary hover:bg-primary/30'
                           }`}
                         >
                           {action.label}
@@ -243,7 +243,7 @@ export default function DataTable<T extends { id?: string }>({
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-gray-500">
             Showing {currentPage * pageSize + 1}-{Math.min((currentPage + 1) * pageSize, filteredData.length)} of{' '}
             {filteredData.length}
           </p>
@@ -252,7 +252,7 @@ export default function DataTable<T extends { id?: string }>({
             <button
               onClick={() => setCurrentPage((p) => Math.max(0, p - 1))}
               disabled={currentPage === 0}
-              className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-2 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-200 transition-colors"
+              className="rounded-lg border border-outline-variant/10 bg-surface-container p-2 text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:text-on-surface-variant transition-colors"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -263,8 +263,8 @@ export default function DataTable<T extends { id?: string }>({
                 onClick={() => setCurrentPage(i)}
                 className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                   currentPage === i
-                    ? 'bg-amber-500 text-gray-900'
-                    : 'border border-gray-700/50 bg-gray-800/30 text-gray-400 hover:text-gray-200'
+                    ? 'bg-primary-container text-on-primary'
+                    : 'border border-outline-variant/10 bg-surface-container text-gray-500 hover:text-on-surface-variant'
                 }`}
               >
                 {i + 1}
@@ -274,7 +274,7 @@ export default function DataTable<T extends { id?: string }>({
             <button
               onClick={() => setCurrentPage((p) => Math.min(totalPages - 1, p + 1))}
               disabled={currentPage === totalPages - 1}
-              className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-2 text-gray-400 disabled:opacity-50 disabled:cursor-not-allowed hover:text-gray-200 transition-colors"
+              className="rounded-lg border border-outline-variant/10 bg-surface-container p-2 text-gray-500 disabled:opacity-50 disabled:cursor-not-allowed hover:text-on-surface-variant transition-colors"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -284,8 +284,8 @@ export default function DataTable<T extends { id?: string }>({
 
       {/* Empty State */}
       {paginatedData.length === 0 && (
-        <div className="rounded-lg border border-gray-700/30 bg-gray-800/20 p-8 text-center">
-          <p className="text-sm text-gray-400">No results found</p>
+        <div className="rounded-lg border border-outline-variant/10 bg-surface-container/20 p-8 text-center">
+          <p className="text-sm text-gray-500">No results found</p>
         </div>
       )}
     </div>

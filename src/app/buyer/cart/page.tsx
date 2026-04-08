@@ -72,13 +72,13 @@ export default function CartPage() {
   if (cartItems.length === 0) {
     return (
       <div className="space-y-8">
-        <h1 className="text-3xl font-bold text-white">Shopping Cart</h1>
+        <h1 className="text-3xl font-bold text-on-surface">Shopping Cart</h1>
 
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/20 p-12 text-center">
-          <p className="text-lg text-gray-400 mb-6">Your cart is empty</p>
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-12 text-center">
+          <p className="text-lg text-on-surface-variant mb-6">Your cart is empty</p>
           <Link
             href="/buyer/shop"
-            className="inline-block rounded-lg bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 transition-all py-3 px-6 font-semibold text-white"
+            className="inline-block rounded-lg bg-gradient-to-r from-primary-container to-primary hover:opacity-90 transition-all py-3 px-6 font-semibold text-on-primary"
           >
             Continue Shopping
           </Link>
@@ -91,47 +91,47 @@ export default function CartPage() {
     <div className="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Shopping Cart</h1>
-        <p className="text-gray-400">Review and proceed to checkout</p>
+        <h1 className="text-3xl font-bold text-on-surface mb-2">Shopping Cart</h1>
+        <p className="text-on-surface-variant">Review and proceed to checkout</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content - Left Side */}
         <div className="lg:col-span-2 space-y-6">
           {/* Cart Items */}
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6 space-y-4">
-            <h2 className="text-lg font-semibold text-white mb-6">Items ({cartItems.length})</h2>
+          <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 space-y-4">
+            <h2 className="text-lg font-semibold text-on-surface mb-6">Items ({cartItems.length})</h2>
 
             {cartItems.map((item, index) => (
               <div
                 key={item.productId}
-                className={`flex gap-4 pb-4 ${index !== cartItems.length - 1 ? 'border-b border-gray-700/30' : ''}`}
+                className={`flex gap-4 pb-4 ${index !== cartItems.length - 1 ? 'border-b border-outline-variant/10' : ''}`}
               >
                 {/* Product Image Placeholder */}
-                <div className="h-20 w-20 rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 flex-shrink-0 flex items-center justify-center">
+                <div className="h-20 w-20 rounded-lg bg-gradient-to-br from-surface-container to-surface-container-highest flex-shrink-0 flex items-center justify-center">
                   <span className="text-xs text-gray-600">Image</span>
                 </div>
 
                 {/* Product Details */}
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-white text-sm mb-1">{item.name}</h3>
-                  <p className="text-sm text-emerald-400 font-semibold">${item.price.toFixed(2)}</p>
+                  <h3 className="font-semibold text-on-surface text-sm mb-1">{item.name}</h3>
+                  <p className="text-sm text-secondary font-semibold">${item.price.toFixed(2)}</p>
                 </div>
 
                 {/* Quantity Controls */}
-                <div className="flex items-center gap-2 border border-gray-600 rounded-lg bg-gray-700/20 px-2">
+                <div className="flex items-center gap-2 border border-outline-variant/20 rounded-lg bg-surface-container-low px-2">
                   <button
                     onClick={() => handleUpdateQuantity(item.productId, item.quantity - 1)}
-                    className="p-1.5 text-gray-400 hover:text-gray-200 transition-colors"
+                    className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
                   >
                     <HiOutlineMinus className="h-4 w-4" />
                   </button>
-                  <span className="w-8 text-center text-sm font-semibold text-white">
+                  <span className="w-8 text-center text-sm font-semibold text-on-surface">
                     {item.quantity}
                   </span>
                   <button
                     onClick={() => handleUpdateQuantity(item.productId, item.quantity + 1)}
-                    className="p-1.5 text-gray-400 hover:text-gray-200 transition-colors"
+                    className="p-1.5 text-on-surface-variant hover:text-on-surface transition-colors"
                   >
                     <HiOutlinePlus className="h-4 w-4" />
                   </button>
@@ -139,12 +139,12 @@ export default function CartPage() {
 
                 {/* Line Total */}
                 <div className="text-right min-w-fit">
-                  <p className="text-sm font-semibold text-white">
+                  <p className="text-sm font-semibold text-on-surface">
                     ${(item.price * item.quantity).toFixed(2)}
                   </p>
                   <button
                     onClick={() => handleRemoveItem(item.productId)}
-                    className="mt-1 text-xs text-red-400 hover:text-red-300 font-semibold flex items-center gap-1"
+                    className="mt-1 text-xs text-error hover:text-error/80 font-semibold flex items-center gap-1"
                   >
                     <HiOutlineTrash className="h-3 w-3" />
                     Remove
@@ -155,22 +155,22 @@ export default function CartPage() {
           </div>
 
           {/* Ambassador Code Confirmation */}
-          <div className="rounded-xl border border-amber-400/30 bg-amber-900/20 p-6">
-            <h3 className="font-semibold text-amber-300 mb-4">Order Attribution</h3>
+          <div className="rounded-xl border border-primary/20 bg-surface-container-low p-6">
+            <h3 className="font-semibold text-primary mb-4">Order Attribution</h3>
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-amber-400/20">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-surface-container-low border border-primary/20">
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Ambassador</p>
-                  <p className="text-sm font-bold text-amber-300">{ambassadorName}</p>
+                  <p className="text-sm font-bold text-primary">{ambassadorName}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-xs text-gray-500 mb-0.5">Code</p>
-                  <p className="text-sm font-mono font-bold text-amber-300 bg-amber-950/50 px-3 py-1 rounded">
+                  <p className="text-sm font-mono font-bold text-primary bg-surface-container px-3 py-1 rounded">
                     {ambassadorCode}
                   </p>
                 </div>
               </div>
-              <p className="text-xs text-amber-200/70">
+              <p className="text-xs text-primary-fixed-dim/70">
                 This order will be attributed to {ambassadorName}. Your purchase supports their business
                 and earns them commissions. You can't change this code during checkout.
               </p>
@@ -179,15 +179,15 @@ export default function CartPage() {
 
           {/* Age Verification Reminder */}
           {!buyerProfile?.ageVerified && (
-            <div className="rounded-xl border border-blue-500/30 bg-blue-950/20 p-6 flex gap-4">
-              <HiOutlineExclamation className="h-6 w-6 text-blue-400 flex-shrink-0" />
+            <div className="rounded-xl border border-tertiary/20 bg-surface-container-low p-6 flex gap-4">
+              <HiOutlineExclamation className="h-6 w-6 text-tertiary flex-shrink-0" />
               <div>
-                <h3 className="font-semibold text-blue-300 mb-2">Age Verification Required</h3>
-                <p className="text-sm text-blue-200/80 mb-4">
+                <h3 className="font-semibold text-tertiary mb-2">Age Verification Required</h3>
+                <p className="text-sm text-tertiary/80 mb-4">
                   You must verify that you are 21+ before checkout. This will be completed as part of
                   the next step.
                 </p>
-                <button className="text-sm font-semibold text-blue-300 hover:text-blue-200">
+                <button className="text-sm font-semibold text-tertiary hover:text-tertiary/80">
                   Learn more →
                 </button>
               </div>
@@ -197,25 +197,25 @@ export default function CartPage() {
 
         {/* Order Summary - Right Sidebar */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6 space-y-4 sticky top-24">
-            <h2 className="text-lg font-semibold text-white">Order Summary</h2>
+          <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6 space-y-4 sticky top-24">
+            <h2 className="text-lg font-semibold text-on-surface">Order Summary</h2>
 
             {/* Subtotal */}
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Subtotal</span>
-              <span className="text-gray-100">${subtotal.toFixed(2)}</span>
+              <span className="text-on-surface-variant">Subtotal</span>
+              <span className="text-on-surface">${subtotal.toFixed(2)}</span>
             </div>
 
             {/* Hold-to-Save Discount */}
             {holdToSaveTier > 0 && (
               <>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Hold-to-Save Discount</span>
-                  <span className="text-emerald-400 font-semibold">-{holdToSaveTier}%</span>
+                  <span className="text-on-surface-variant">Hold-to-Save Discount</span>
+                  <span className="text-secondary font-semibold">-{holdToSaveTier}%</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Discount Amount</span>
-                  <span className="text-emerald-400 font-semibold">
+                  <span className="text-on-surface-variant">Discount Amount</span>
+                  <span className="text-secondary font-semibold">
                     -${discountAmount.toFixed(2)}
                   </span>
                 </div>
@@ -223,22 +223,22 @@ export default function CartPage() {
             )}
 
             {/* Divider */}
-            <div className="h-px bg-gray-700/30" />
+            <div className="h-px bg-outline-variant/10" />
 
             {/* Total */}
             <div className="flex justify-between text-base">
-              <span className="font-semibold text-white">Total</span>
-              <span className="text-2xl font-bold text-emerald-400">${total.toFixed(2)}</span>
+              <span className="font-semibold text-on-surface">Total</span>
+              <span className="text-2xl font-bold text-secondary">${total.toFixed(2)}</span>
             </div>
 
             {/* Tokens Earned */}
-            <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/30 p-3">
+            <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
               <p className="text-xs text-gray-500 mb-1">Tokens You'll Earn</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-bold text-yellow-400">{tokensEarned}</span>
+                <span className="text-2xl font-bold text-primary">{tokensEarned}</span>
                 <span className="text-xs text-gray-500">$FAME</span>
               </div>
-              <p className="text-xs text-yellow-200/70 mt-2">
+              <p className="text-xs text-primary-fixed-dim/70 mt-2">
                 Earn 10 tokens per $1 spent. Use them for Hold-to-Save discounts!
               </p>
             </div>
@@ -246,7 +246,7 @@ export default function CartPage() {
             {/* Checkout Button */}
             <Link
               href="/buyer/checkout"
-              className="block w-full rounded-lg bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-700 hover:to-green-600 transition-all py-3 px-4 text-center font-semibold text-white"
+              className="block w-full rounded-lg bg-gradient-to-r from-primary-container to-primary hover:opacity-90 transition-all py-3 px-4 text-center font-semibold text-on-primary"
             >
               Proceed to Checkout
             </Link>
@@ -254,7 +254,7 @@ export default function CartPage() {
             {/* Continue Shopping */}
             <Link
               href="/buyer/shop"
-              className="block w-full rounded-lg border border-gray-600 bg-gray-700/30 hover:bg-gray-700/50 transition-colors py-3 px-4 text-center font-semibold text-gray-100"
+              className="block w-full rounded-lg border border-outline-variant/20 bg-surface-container-highest hover:bg-surface-container-highest/80 transition-colors py-3 px-4 text-center font-semibold text-on-surface"
             >
               Continue Shopping
             </Link>

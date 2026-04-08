@@ -26,7 +26,7 @@ export default function TrainingPage() {
       ],
       estimatedTime: '45 min',
       icon: BookOpen,
-      color: 'from-blue-500/20 to-blue-600/20 border-blue-500/30 text-blue-400',
+      color: 'from-tertiary/20 to-tertiary/20 border-tertiary/20 text-tertiary',
     },
     {
       id: 2,
@@ -40,7 +40,7 @@ export default function TrainingPage() {
       ],
       estimatedTime: '60 min',
       icon: Zap,
-      color: 'from-amber-500/20 to-yellow-600/20 border-amber-500/30 text-amber-400',
+      color: 'from-primary/20 to-primary/20 border-primary/20 text-primary-fixed-dim',
     },
     {
       id: 3,
@@ -54,7 +54,7 @@ export default function TrainingPage() {
       ],
       estimatedTime: '90 min',
       icon: Zap,
-      color: 'from-purple-500/20 to-pink-600/20 border-purple-500/30 text-purple-400',
+      color: 'from-tertiary/20 to-tertiary/20 border-tertiary/20 text-tertiary',
     },
     {
       id: 4,
@@ -67,7 +67,7 @@ export default function TrainingPage() {
       ],
       estimatedTime: '75 min',
       icon: Zap,
-      color: 'from-green-500/20 to-emerald-600/20 border-green-500/30 text-green-400',
+      color: 'from-secondary/20 to-secondary/20 border-secondary/20 text-secondary',
     },
   ];
 
@@ -82,44 +82,44 @@ export default function TrainingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-100">Training Center</h1>
-        <p className="mt-2 text-gray-400">Master the skills to grow your FameBar business</p>
+        <h1 className="text-3xl font-bold text-on-surface">Training Center</h1>
+        <p className="mt-2 text-on-surface-variant">Master the skills to grow your FameBar business</p>
       </div>
 
       {/* Overall Progress */}
-      <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-100">Your Progress</h2>
+      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-6">
+        <h2 className="mb-4 text-lg font-semibold text-on-surface">Your Progress</h2>
 
         <div className="space-y-4">
           <div>
             <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm text-gray-400">Overall Completion</p>
-              <p className="text-sm font-bold text-amber-300">{overallProgress}%</p>
+              <p className="text-sm text-on-surface-variant">Overall Completion</p>
+              <p className="text-sm font-bold text-primary">{overallProgress}%</p>
             </div>
-            <div className="h-3 overflow-hidden rounded-full bg-gray-700/50">
+            <div className="h-3 overflow-hidden rounded-full bg-surface-container-highest">
               <div
-                className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+                className="h-full bg-gradient-to-r from-primary-fixed-dim to-primary transition-all duration-500"
                 style={{ width: `${overallProgress}%` }}
               />
             </div>
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-            <div className="rounded-lg bg-gray-900/50 p-3 text-center">
+            <div className="rounded-lg bg-surface-container p-3 text-center">
               <p className="text-xs text-gray-500">Lessons Done</p>
-              <p className="mt-2 text-xl font-bold text-emerald-400">{completedLessons}</p>
+              <p className="mt-2 text-xl font-bold text-secondary">{completedLessons}</p>
             </div>
-            <div className="rounded-lg bg-gray-900/50 p-3 text-center">
+            <div className="rounded-lg bg-surface-container p-3 text-center">
               <p className="text-xs text-gray-500">Lessons Left</p>
-              <p className="mt-2 text-xl font-bold text-amber-400">{totalLessons - completedLessons}</p>
+              <p className="mt-2 text-xl font-bold text-primary-fixed-dim">{totalLessons - completedLessons}</p>
             </div>
-            <div className="rounded-lg bg-gray-900/50 p-3 text-center">
+            <div className="rounded-lg bg-surface-container p-3 text-center">
               <p className="text-xs text-gray-500">Modules</p>
-              <p className="mt-2 text-xl font-bold text-blue-400">{modules.length}</p>
+              <p className="mt-2 text-xl font-bold text-tertiary">{modules.length}</p>
             </div>
-            <div className="rounded-lg bg-gray-900/50 p-3 text-center">
+            <div className="rounded-lg bg-surface-container p-3 text-center">
               <p className="text-xs text-gray-500">Time Invested</p>
-              <p className="mt-2 text-xl font-bold text-purple-400">3h 15m</p>
+              <p className="mt-2 text-xl font-bold text-tertiary">3h 15m</p>
             </div>
           </div>
         </div>
@@ -143,12 +143,12 @@ export default function TrainingPage() {
                     <Icon className="h-6 w-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-100">{module.title}</h3>
-                    <p className="mt-1 text-sm text-gray-400">{module.description}</p>
+                    <h3 className="text-lg font-semibold text-on-surface">{module.title}</h3>
+                    <p className="mt-1 text-sm text-on-surface-variant">{module.description}</p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold text-gray-400 flex items-center gap-1">
+                  <p className="text-xs font-semibold text-on-surface-variant flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {module.estimatedTime}
                   </p>
@@ -161,11 +161,11 @@ export default function TrainingPage() {
                   <p className="text-xs font-medium text-gray-500">
                     {completedCount}/{module.lessons.length} lessons
                   </p>
-                  <p className="text-xs font-bold text-gray-300">{moduleProgress}%</p>
+                  <p className="text-xs font-bold text-on-surface-variant">{moduleProgress}%</p>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-gray-700/50">
+                <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
                   <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-green-400 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-primary-container to-primary transition-all duration-500"
                     style={{ width: `${moduleProgress}%` }}
                   />
                 </div>
@@ -174,15 +174,15 @@ export default function TrainingPage() {
               {/* Lessons */}
               <div className="space-y-2 mb-4">
                 {module.lessons.map((lesson, index) => (
-                  <div key={index} className="flex items-center gap-3 rounded-lg bg-gray-900/30 p-3">
+                  <div key={index} className="flex items-center gap-3 rounded-lg bg-surface-container/30 p-3">
                     {lesson.completed ? (
-                      <CheckCircle className="h-4 w-4 flex-shrink-0 text-emerald-400" />
+                      <CheckCircle className="h-4 w-4 flex-shrink-0 text-secondary" />
                     ) : (
-                      <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-gray-600" />
+                      <div className="h-4 w-4 flex-shrink-0 rounded-full border-2 border-outline-variant/20" />
                     )}
                     <p
                       className={`text-sm ${
-                        lesson.completed ? 'text-gray-400 line-through' : 'text-gray-300'
+                        lesson.completed ? 'text-on-surface-variant line-through' : 'text-on-surface-variant'
                       }`}
                     >
                       {lesson.title}
@@ -193,8 +193,8 @@ export default function TrainingPage() {
 
               <button className={`w-full rounded-lg py-2.5 font-semibold text-sm transition-all duration-200 ${
                 moduleProgress === 100
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/50'
-                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/50 hover:bg-amber-500/30'
+                  ? 'bg-secondary/20 text-secondary border border-secondary/30'
+                  : 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
               }`}>
                 {moduleProgress === 100 ? '✓ Completed' : 'Continue Module'}
               </button>
@@ -204,16 +204,16 @@ export default function TrainingPage() {
       </div>
 
       {/* Certification Banner */}
-      <div className="rounded-lg border border-emerald-500/30 bg-gradient-to-r from-emerald-950/30 to-green-950/20 p-6">
+      <div className="rounded-lg border border-secondary/20 bg-surface-container-low p-6">
         <div className="flex items-start gap-4">
           <div className="text-3xl">🏆</div>
           <div>
-            <h3 className="font-bold text-emerald-300">Ambassador Certification</h3>
-            <p className="mt-2 text-sm text-gray-300">
+            <h3 className="font-bold text-secondary">Ambassador Certification</h3>
+            <p className="mt-2 text-sm text-on-surface-variant">
               Complete all modules to earn your official FameBar Ambassador Certification and unlock
               exclusive perks like priority support and early access to new features.
             </p>
-            <p className="mt-3 text-xs text-emerald-200">
+            <p className="mt-3 text-xs text-secondary">
               Progress: {overallProgress}% complete
             </p>
           </div>
@@ -221,19 +221,19 @@ export default function TrainingPage() {
       </div>
 
       {/* Resources */}
-      <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-6">
-        <h3 className="mb-4 font-semibold text-blue-300">Additional Resources</h3>
+      <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-6">
+        <h3 className="mb-4 font-semibold text-tertiary">Additional Resources</h3>
         <div className="space-y-2">
-          <a href="#" className="block text-sm text-blue-400 hover:text-blue-300">
+          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Download Ambassador Handbook
           </a>
-          <a href="#" className="block text-sm text-blue-400 hover:text-blue-300">
+          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Watch Video: Building Your Network
           </a>
-          <a href="#" className="block text-sm text-blue-400 hover:text-blue-300">
+          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Join the Ambassador Telegram Group
           </a>
-          <a href="#" className="block text-sm text-blue-400 hover:text-blue-300">
+          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Schedule a 1-on-1 Coaching Call
           </a>
         </div>

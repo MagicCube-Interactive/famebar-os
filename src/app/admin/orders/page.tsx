@@ -63,24 +63,24 @@ export default function OrdersPage() {
   const pendingCount = orders.filter(o => o.payment_status === 'pending').length;
 
   const columns: Column<Order>[] = [
-    { key: 'id', label: 'Order ID', render: (v) => <span className="font-mono text-xs text-gray-400">{String(v).slice(0, 13).toUpperCase()}</span> },
+    { key: 'id', label: 'Order ID', render: (v) => <span className="font-mono text-xs text-gray-500">{String(v).slice(0, 13).toUpperCase()}</span> },
     { key: 'buyer', label: 'Buyer', sortable: true },
-    { key: 'ambassador_code', label: 'Ambassador Code', render: (v) => <span className="font-mono text-amber-300">{String(v)}</span> },
-    { key: 'total', label: 'Total', sortable: true, render: (v) => <span className="text-emerald-400 font-semibold">${Number(v).toFixed(2)}</span> },
+    { key: 'ambassador_code', label: 'Ambassador Code', render: (v) => <span className="font-mono text-primary-fixed-dim">{String(v)}</span> },
+    { key: 'total', label: 'Total', sortable: true, render: (v) => <span className="text-secondary font-semibold">${Number(v).toFixed(2)}</span> },
     {
       key: 'payment_status',
       label: 'Payment',
       render: (v) => {
-        const colors: Record<string, string> = { paid: 'text-emerald-400', pending: 'text-amber-400', refunded: 'text-red-400', failed: 'text-red-400' };
-        return <span className={`capitalize font-semibold ${colors[String(v)] || 'text-gray-400'}`}>{String(v)}</span>;
+        const colors: Record<string, string> = { paid: 'text-secondary', pending: 'text-primary', refunded: 'text-error', failed: 'text-error' };
+        return <span className={`capitalize font-semibold ${colors[String(v)] || 'text-gray-500'}`}>{String(v)}</span>;
       },
     },
     {
       key: 'settlement_status',
       label: 'Settlement',
       render: (v) => {
-        const colors: Record<string, string> = { settled: 'text-emerald-400', pending: 'text-amber-400', refunded: 'text-red-400', clawedback: 'text-red-400' };
-        return <span className={`capitalize ${colors[String(v)] || 'text-gray-400'}`}>{String(v)}</span>;
+        const colors: Record<string, string> = { settled: 'text-secondary', pending: 'text-primary', refunded: 'text-error', clawedback: 'text-error' };
+        return <span className={`capitalize ${colors[String(v)] || 'text-gray-500'}`}>{String(v)}</span>;
       },
     },
     { key: 'created_at', label: 'Date', sortable: true },
@@ -89,26 +89,26 @@ export default function OrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-100">Orders</h1>
-        <p className="mt-1 text-gray-400">All platform orders</p>
+        <h1 className="text-3xl font-bold text-on-surface">Orders</h1>
+        <p className="mt-1 text-gray-500">All platform orders</p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Total GMV</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">${totalGMV.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-secondary mt-1">${totalGMV.toFixed(2)}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Paid</p>
-          <p className="text-2xl font-bold text-blue-400 mt-1">{paidCount}</p>
+          <p className="text-2xl font-bold text-tertiary mt-1">{paidCount}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Pending</p>
-          <p className="text-2xl font-bold text-amber-400 mt-1">{pendingCount}</p>
+          <p className="text-2xl font-bold text-primary mt-1">{pendingCount}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Refunded</p>
-          <p className="text-2xl font-bold text-red-400 mt-1">{refundedCount}</p>
+          <p className="text-2xl font-bold text-error mt-1">{refundedCount}</p>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function OrdersPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search buyer, ambassador, order ID..."
-            className="w-full pl-9 pr-4 py-2 bg-gray-800/50 border border-gray-700 rounded-lg text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            className="w-full pl-9 pr-4 py-2 bg-surface-container border border-outline-variant/20 rounded-lg text-sm text-on-surface-variant placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
         <div className="flex gap-2">
@@ -128,7 +128,7 @@ export default function OrdersPage() {
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                statusFilter === s ? 'bg-amber-500 text-white' : 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50'
+                statusFilter === s ? 'bg-primary-container text-on-primary' : 'bg-surface-container-highest text-gray-300 hover:bg-surface-container'
               }`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -139,7 +139,7 @@ export default function OrdersPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
         </div>
       ) : (
         <DataTable data={filtered} columns={columns} />

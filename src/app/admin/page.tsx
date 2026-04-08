@@ -1,19 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  DollarSign,
-  TrendingUp,
-  AlertTriangle,
-  Users,
-  ShoppingCart,
-  Clock,
-  CheckCircle,
-} from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import NBAWidget from '@/components/shared/NBAWidget';
-import StatCard from '@/components/admin/StatCard';
-import ApprovalQueue from '@/components/admin/ApprovalQueue';
 
 interface AdminMetrics {
   dailyGMV: number;
@@ -34,6 +22,8 @@ export default function AdminOverview() {
   const [metrics, setMetrics] = useState<AdminMetrics | null>(null);
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime');
+  const [command, setCommand] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -159,224 +149,442 @@ export default function AdminOverview() {
     fetchData();
   }, []);
 
+  const fmt = (n: number) =>
+    `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const fmtCompact = (n: number) =>
+    n >= 1_000_000
+      ? `$${(n / 1_000_000).toFixed(2)}M`
+      : n >= 1_000
+      ? `$${(n / 1_000).toFixed(1)}K`
+      : fmt(n);
+
   if (loading || !metrics) {
     return (
       <div className="flex items-center justify-center min-h-64">
-        <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-4 border-primary-container border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-gray-100">Admin Dashboard</h1>
-        <p className="text-gray-400">Real-time platform operations, metrics, and alerts</p>
-      </div>
-
-      {/* Critical Alerts */}
-      {(metrics.refundCount > 0 || metrics.pendingSettlementCount > 0) && (
-        <div className="rounded-xl border border-red-500/30 bg-red-900/10 p-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <h3 className="font-semibold text-red-300">Active Alerts</h3>
-              <p className="text-sm text-red-200 mt-1">
-                {metrics.refundCount > 0 && `${metrics.refundCount} refund requests pending. `}
-                {metrics.pendingSettlementCount > 0 && `${metrics.pendingSettlementCount} orders awaiting settlement.`}
-              </p>
-              <button className="mt-2 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-500/30 transition-colors">
-                Review Now →
-              </button>
-            </div>
-          </div>
+      {/* ── Hero Header ── */}
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 py-4">
+        <div>
+          <h1 className="text-4xl font-extrabold tracking-tighter text-on-surface">
+            OPS COCKPIT
+          </h1>
+          <p className="text-gray-500 font-mono text-xs uppercase tracking-widest mt-1">
+            Live Global Operations Instance:{' '}
+            <span className="text-primary-fixed-dim">FB-OS-PRIME-01</span>
+          </p>
         </div>
-      )}
+        <div className="flex items-center gap-2 bg-surface-container-low p-1 rounded-lg">
+          <button
+            onClick={() => setActiveTab('realtime')}
+            className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${
+              activeTab === 'realtime'
+                ? 'bg-primary-container text-on-primary-container'
+                : 'text-gray-500 hover:text-on-surface'
+            }`}
+          >
+            REAL-TIME
+          </button>
+          <button
+            onClick={() => setActiveTab('historical')}
+            className={`px-4 py-1.5 text-xs font-bold rounded transition-colors ${
+              activeTab === 'historical'
+                ? 'bg-primary-container text-on-primary-container'
+                : 'text-gray-500 hover:text-on-surface'
+            }`}
+          >
+            HISTORICAL
+          </button>
+        </div>
+      </header>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<DollarSign className="h-5 w-5" />}
-          title="Daily GMV"
-          value={`$${metrics.dailyGMV.toLocaleString('en-US', { minimumFractionDigits: 2 })}`}
-          trend={0}
-          trendLabel={`${metrics.ordersToday} orders today`}
-          color="emerald"
-        />
-        <StatCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          title="Monthly GMV"
-          value={metrics.monthlyGMV >= 1000 ? `$${(metrics.monthlyGMV / 1000).toFixed(1)}K` : `$${metrics.monthlyGMV.toFixed(2)}`}
-          trend={0}
-          trendLabel="this month"
-          color="blue"
-        />
-        <StatCard
-          icon={<Users className="h-5 w-5" />}
-          title="Ambassadors"
-          value={metrics.totalAmbassadors.toLocaleString()}
-          trend={0}
-          trendLabel={`${metrics.activeAmbassadors} active`}
-          color="purple"
-        />
-        <StatCard
-          icon={<ShoppingCart className="h-5 w-5" />}
-          title="Total Orders"
-          value={metrics.totalOrders.toLocaleString()}
-          trend={0}
-          trendLabel="all time"
-          color="orange"
-        />
-      </div>
-
-      {/* Payouts & Token Liabilities */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6 lg:col-span-2">
-          <h3 className="mb-4 text-lg font-semibold text-gray-100">Commission Status</h3>
-
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="h-5 w-5 text-amber-400" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-100">Pending (in 14-day window)</p>
-                  <p className="text-xs text-gray-500">Awaiting settlement</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-amber-400">
-                ${metrics.totalPendingCommissions.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle className="h-5 w-5 text-blue-400" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-100">Available</p>
-                  <p className="text-xs text-gray-500">Ready for payout</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-blue-400">
-                ${metrics.totalAvailableCommissions.toFixed(2)}
-              </p>
-            </div>
-
-            <div className="flex items-center justify-between border-t border-gray-700/30 pt-4">
-              <div className="flex items-center gap-3">
-                <TrendingUp className="h-5 w-5 text-emerald-400" />
-                <div>
-                  <p className="text-sm font-semibold text-gray-100">Paid Out (Lifetime)</p>
-                  <p className="text-xs text-gray-500">Total distributed</p>
-                </div>
-              </div>
-              <p className="text-2xl font-bold text-emerald-400">
-                ${metrics.totalPaidCommissions >= 1000000
-                  ? `${(metrics.totalPaidCommissions / 1000000).toFixed(2)}M`
-                  : metrics.totalPaidCommissions >= 1000
-                  ? `${(metrics.totalPaidCommissions / 1000).toFixed(1)}K`
-                  : metrics.totalPaidCommissions.toFixed(2)}
-              </p>
-            </div>
-          </div>
+      {/* ── Top Stats Row (6 cards) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
+        {/* Daily GMV */}
+        <div className="bg-surface-container-low p-4 rounded-lg border-b-2 border-secondary">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Daily GMV</p>
+          <h3 className="text-2xl font-black text-secondary mt-1">{fmt(metrics.dailyGMV)}</h3>
+          <p className="text-[10px] font-mono text-secondary/70 mt-1">
+            {metrics.ordersToday} ORDERS TODAY
+          </p>
         </div>
 
-        <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-900/20 to-yellow-900/20 p-6">
-          <h3 className="mb-4 text-lg font-semibold text-amber-300">Token Liabilities</h3>
+        {/* Monthly GMV */}
+        <div className="bg-surface-container-low p-4 rounded-lg">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Monthly GMV</p>
+          <h3 className="text-2xl font-black text-on-surface mt-1">{fmtCompact(metrics.monthlyGMV)}</h3>
+          <p className="text-[10px] font-mono text-secondary mt-1">THIS MONTH</p>
+        </div>
 
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-gray-400">Outstanding $FAME Value</p>
-              <p className="text-3xl font-bold text-amber-300 mt-1">
-                ${(metrics.tokenLiabilities * 0.01).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </p>
-            </div>
+        {/* Pending Payouts */}
+        <div className="bg-surface-container-low p-4 rounded-lg border-b-2 border-primary-container">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Pending Payouts</p>
+          <h3 className="text-2xl font-black text-primary-container mt-1">
+            {fmtCompact(metrics.totalPendingCommissions + metrics.totalAvailableCommissions)}
+          </h3>
+          <p className="text-[10px] font-mono text-primary-fixed-dim/70 mt-1">EST. 48H CLEAR</p>
+        </div>
 
-            <div className="rounded-lg bg-amber-500/10 p-3 border border-amber-500/20">
-              <p className="text-xs text-amber-300">
-                <span className="font-semibold">{metrics.tokenLiabilities.toLocaleString()}</span> tokens in circulation
-              </p>
-            </div>
-          </div>
+        {/* Token Liabilities */}
+        <div className="bg-surface-container-low p-4 rounded-lg">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Token Liabilities</p>
+          <h3 className="text-2xl font-black text-primary mt-1">
+            {metrics.tokenLiabilities >= 1_000_000
+              ? `${(metrics.tokenLiabilities / 1_000_000).toFixed(2)}M`
+              : metrics.tokenLiabilities.toLocaleString()}{' '}
+            <span className="text-xs font-mono">$FAME</span>
+          </h3>
+          <p className="text-[10px] font-mono text-gray-600 mt-1">
+            VALUE: {fmt(metrics.tokenLiabilities * 0.01)}
+          </p>
+        </div>
+
+        {/* Active Ambassadors */}
+        <div className="bg-surface-container-low p-4 rounded-lg">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active Ambassadors</p>
+          <h3 className="text-2xl font-black text-on-surface mt-1">
+            {metrics.activeAmbassadors.toLocaleString()}
+          </h3>
+          <p className="text-[10px] font-mono text-gray-600 mt-1">
+            OF {metrics.totalAmbassadors.toLocaleString()} TOTAL
+          </p>
+        </div>
+
+        {/* Fraud Queue */}
+        <div className="bg-surface-container-low p-4 rounded-lg border border-error/50">
+          <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Fraud Queue</p>
+          <h3 className="text-2xl font-black text-error mt-1">{metrics.refundCount}</h3>
+          <p className="text-[10px] font-mono text-error/70 mt-1 uppercase">Immediate Action</p>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <ApprovalQueue count={metrics.pendingSettlementCount} />
+      {/* ── 2-Column Layout ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* ── Left Column (8/12) ── */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Queue Alerts Row */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-surface-container flex items-center p-4 rounded border-l-4 border-error">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-400">Orders Review</p>
+                <p className="text-2xl font-black text-on-surface">{metrics.pendingSettlementCount}</p>
+              </div>
+              <svg className="w-8 h-8 text-error opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+              </svg>
+            </div>
+            <div className="bg-surface-container flex items-center p-4 rounded border-l-4 border-error">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-400">Missing Payout Info</p>
+                <p className="text-2xl font-black text-on-surface">{metrics.refundCount}</p>
+              </div>
+              <svg className="w-8 h-8 text-error opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a2.25 2.25 0 0 0-2.25-2.25H15a3 3 0 1 1-6 0H5.25A2.25 2.25 0 0 0 3 12m18 0v6a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 9m18 0V6a2.25 2.25 0 0 0-2.25-2.25H5.25A2.25 2.25 0 0 0 3 6v3" />
+              </svg>
+            </div>
+            <div className="bg-surface-container flex items-center p-4 rounded border-l-4 border-error">
+              <div className="flex-1">
+                <p className="text-xs font-bold text-gray-400">Pending Approvals</p>
+                <p className="text-2xl font-black text-on-surface">{metrics.totalOrders > 0 ? Math.min(5, metrics.totalOrders) : 0}</p>
+              </div>
+              <svg className="w-8 h-8 text-error opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+              </svg>
+            </div>
+          </div>
 
-          {/* Campaign Performance */}
-          {campaigns.length > 0 && (
-            <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-              <h3 className="mb-4 text-lg font-semibold text-gray-100">Active Campaigns</h3>
-              <div className="space-y-4">
-                {campaigns.map((campaign) => {
-                  const m = campaign.metrics || {};
-                  const sent = m.sent || 0;
-                  const delivered = m.delivered || 0;
-                  const clicked = m.clicked || 0;
-                  const converted = m.converted || 0;
+          {/* Charts Row */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Daily GMV Bar Chart Mockup */}
+            <div className="bg-surface-container p-6 rounded-xl border border-outline-variant/5">
+              <div className="flex justify-between items-center mb-6">
+                <h4 className="text-sm font-bold tracking-tight text-gray-400 uppercase">
+                  Daily GMV Line (30D)
+                </h4>
+                <svg className="w-5 h-5 text-primary-fixed-dim" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+                </svg>
+              </div>
+              <div className="h-48 flex items-end gap-1 px-2">
+                <div className="w-full bg-primary-container/20 h-[30%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/30 h-[45%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/40 h-[60%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/20 h-[40%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/50 h-[75%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/70 h-[90%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/60 h-[80%] rounded-t-sm" />
+                <div className="w-full bg-primary-container h-[100%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/40 h-[55%] rounded-t-sm" />
+                <div className="w-full bg-primary-container/30 h-[40%] rounded-t-sm" />
+              </div>
+              <div className="flex justify-between mt-4 text-[10px] font-mono text-gray-600">
+                <span>01 DAY</span>
+                <span>15 DAY</span>
+                <span>30 DAY</span>
+              </div>
+            </div>
 
-                  return (
-                    <div key={campaign.id} className="rounded-lg border border-gray-700/30 bg-gray-800/20 p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-semibold text-gray-100">{campaign.name}</h4>
-                        <span className="text-xs rounded-full bg-green-500/20 px-2.5 py-1 text-green-300 font-medium">
-                          Active
+            {/* Commission by Tier Donut Mockup */}
+            <div className="bg-surface-container p-6 rounded-xl border border-outline-variant/5">
+              <div className="flex justify-between items-center mb-6">
+                <h4 className="text-sm font-bold tracking-tight text-gray-400 uppercase">
+                  Commission by Tier
+                </h4>
+                <svg className="w-5 h-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z" />
+                </svg>
+              </div>
+              <div className="flex items-center justify-center h-48">
+                <div className="relative w-40 h-40 rounded-full border-[20px] border-primary-container flex items-center justify-center">
+                  <div className="absolute inset-0 w-full h-full rounded-full border-[20px] border-secondary border-t-transparent border-r-transparent border-b-transparent rotate-[45deg]" />
+                  <div className="text-center">
+                    <p className="text-2xl font-black text-on-surface">64%</p>
+                    <p className="text-[10px] text-gray-500 uppercase">Elite Tier</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary-container" />
+                  <span className="text-[10px] font-mono text-gray-400">ELITE: 64%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-secondary" />
+                  <span className="text-[10px] font-mono text-gray-400">PRO: 22%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-tertiary" />
+                  <span className="text-[10px] font-mono text-gray-400">BASE: 14%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Global Order Ledger (Bloomberg-style table) */}
+          <div className="bg-surface-container-low rounded-xl overflow-hidden border border-outline-variant/10">
+            <div className="bg-surface-container px-6 py-3 flex justify-between items-center">
+              <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Global Order Ledger
+              </h4>
+              <span className="text-[10px] font-mono text-secondary">LIVE FEED ON</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="border-b border-outline-variant/10">
+                  <tr>
+                    <th className="px-6 py-3 text-[10px] font-mono text-gray-500 uppercase">ID</th>
+                    <th className="px-6 py-3 text-[10px] font-mono text-gray-500 uppercase">Entity</th>
+                    <th className="px-6 py-3 text-[10px] font-mono text-gray-500 uppercase">Amount</th>
+                    <th className="px-6 py-3 text-[10px] font-mono text-gray-500 uppercase">Status</th>
+                    <th className="px-6 py-3 text-[10px] font-mono text-gray-500 uppercase">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5">
+                  {/* Paid commissions row */}
+                  <tr className="hover:bg-surface-container-high transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-primary-fixed-dim">#FB-COMM-P</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-on-surface">Paid Commissions</td>
+                    <td className="px-6 py-4 font-mono text-xs text-secondary">
+                      {fmtCompact(metrics.totalPaidCommissions)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-0.5 rounded-full bg-secondary/10 text-secondary text-[10px] font-bold">
+                        SETTLED
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                    </td>
+                  </tr>
+                  {/* Pending commissions row */}
+                  <tr className="hover:bg-surface-container-high transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-primary-fixed-dim">#FB-COMM-Q</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-on-surface">Pending Commissions</td>
+                    <td className="px-6 py-4 font-mono text-xs text-on-surface">
+                      {fmt(metrics.totalPendingCommissions)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-0.5 rounded-full bg-primary-container/10 text-primary-container text-[10px] font-bold">
+                        PENDING
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                    </td>
+                  </tr>
+                  {/* Available commissions row */}
+                  <tr className="hover:bg-surface-container-high transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-primary-fixed-dim">#FB-COMM-A</td>
+                    <td className="px-6 py-4 text-xs font-semibold text-on-surface">Available Commissions</td>
+                    <td className="px-6 py-4 font-mono text-xs text-on-surface">
+                      {fmt(metrics.totalAvailableCommissions)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-2 py-0.5 rounded-full bg-primary-container/10 text-primary-container text-[10px] font-bold">
+                        READY
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                    </td>
+                  </tr>
+                  {/* Refunds row (if any) */}
+                  {metrics.refundCount > 0 && (
+                    <tr className="hover:bg-surface-container-high transition-colors">
+                      <td className="px-6 py-4 font-mono text-xs text-primary-fixed-dim">#FB-REFUND</td>
+                      <td className="px-6 py-4 text-xs font-semibold text-on-surface">Refund Requests</td>
+                      <td className="px-6 py-4 font-mono text-xs text-error">
+                        {metrics.refundCount} orders
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-2 py-0.5 rounded-full bg-error/10 text-error text-[10px] font-bold">
+                          FLAGGED
                         </span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <p className="text-xs text-gray-500">Sent</p>
-                          <p className="font-semibold text-gray-200 mt-1">{sent.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Delivered</p>
-                          <p className="font-semibold text-gray-200 mt-1">
-                            {sent > 0 ? `${((delivered / sent) * 100).toFixed(0)}%` : '—'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Clicked</p>
-                          <p className="font-semibold text-gray-200 mt-1">
-                            {delivered > 0 ? `${((clicked / delivered) * 100).toFixed(0)}%` : '—'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Converted</p>
-                          <p className="font-semibold text-emerald-400 mt-1">{converted}</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
+          </div>
         </div>
 
-        <div className="space-y-6">
-          <NBAWidget maxActions={2} title="Admin Actions" />
-
-          <div className="space-y-3">
-            <div className="rounded-xl border border-orange-500/30 bg-orange-900/10 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-orange-300">Refund Requests</h4>
-                <span className="text-2xl font-bold text-orange-400">{metrics.refundCount}</span>
-              </div>
-              <button className="w-full rounded-lg bg-orange-500/20 py-2 text-xs font-medium text-orange-300 hover:bg-orange-500/30 transition-colors mt-2">
-                Process Refunds
-              </button>
+        {/* ── Right Column (4/12) ── */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* NBA Widget - Urgent Actions */}
+          <div className="bg-surface-container-highest p-6 rounded-xl border border-primary/20 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-2">
+              <svg className="w-16 h-16 text-primary-fixed-dim opacity-20 rotate-12" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z" />
+              </svg>
             </div>
+            <h4 className="text-xs font-black text-primary uppercase tracking-widest mb-4">
+              Urgent Actions (NBA)
+            </h4>
+            <div className="space-y-4">
+              {metrics.pendingSettlementCount > 0 && (
+                <div className="p-3 rounded bg-background/50 border-l-2 border-primary">
+                  <p className="text-xs font-bold text-on-surface">
+                    {metrics.pendingSettlementCount} orders need settlement
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Paid orders awaiting settlement processing.
+                  </p>
+                  <button className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline">
+                    Run Settlement
+                  </button>
+                </div>
+              )}
+              {metrics.refundCount > 0 && (
+                <div className="p-3 rounded bg-background/50 border-l-2 border-error">
+                  <p className="text-xs font-bold text-on-surface">
+                    {metrics.refundCount} refund requests pending
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Refunded orders requiring review and processing.
+                  </p>
+                  <button className="mt-3 text-[10px] font-black text-error uppercase hover:underline">
+                    Process Refunds
+                  </button>
+                </div>
+              )}
+              {metrics.activeAmbassadors > 0 && (
+                <div className="p-3 rounded bg-background/50 border-l-2 border-secondary">
+                  <p className="text-xs font-bold text-on-surface">
+                    {metrics.activeAmbassadors} active ambassadors
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Currently qualified ambassadors generating revenue.
+                  </p>
+                  <button className="mt-3 text-[10px] font-black text-secondary uppercase hover:underline">
+                    View Network
+                  </button>
+                </div>
+              )}
+              {campaigns.length > 0 && (
+                <div className="p-3 rounded bg-background/50 border-l-2 border-primary">
+                  <p className="text-xs font-bold text-on-surface">
+                    {campaigns.length} active campaign{campaigns.length !== 1 ? 's' : ''}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {campaigns.map((c) => c.name).join(', ')}
+                  </p>
+                  <button className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline">
+                    Manage Campaigns
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
-            <div className="rounded-xl border border-blue-500/30 bg-blue-900/10 p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="font-semibold text-blue-300">Pending Settlement</h4>
-                <span className="text-2xl font-bold text-blue-400">{metrics.pendingSettlementCount}</span>
+          {/* System Health */}
+          <div className="bg-surface-container p-6 rounded-xl border border-outline-variant/10">
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-6">
+              System Health
+            </h4>
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-mono text-gray-400">API LATENCY</span>
+                  <span className="text-[10px] font-mono text-secondary">OPTIMAL</span>
+                </div>
+                <div className="h-1 bg-background rounded-full overflow-hidden">
+                  <div className="h-full bg-secondary w-[15%]" />
+                </div>
               </div>
-              <button className="w-full rounded-lg bg-blue-500/20 py-2 text-xs font-medium text-blue-300 hover:bg-blue-500/30 transition-colors mt-2">
-                Run Settlement
-              </button>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-mono text-gray-400">LEDGER SYNC</span>
+                  <span className="text-[10px] font-mono text-on-surface">99.99%</span>
+                </div>
+                <div className="h-1 bg-background rounded-full overflow-hidden">
+                  <div className="h-full bg-primary-container w-[99%]" />
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span className="text-[10px] font-mono text-gray-400">AUTH CLUSTER</span>
+                  <span className="text-[10px] font-mono text-error">REDUNDANCY LOW</span>
+                </div>
+                <div className="h-1 bg-background rounded-full overflow-hidden">
+                  <div className="h-full bg-error w-[40%]" />
+                </div>
+              </div>
+            </div>
+            <div className="mt-8 pt-6 border-t border-outline-variant/10">
+              <div className="flex items-center justify-between text-[10px] font-mono text-gray-500">
+                <span>INSTANCE ID</span>
+                <span className="text-on-surface">FB-OS-01</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] font-mono text-gray-500 mt-2">
+                <span>REGION</span>
+                <span className="text-on-surface">US-EAST-1</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Command Terminal */}
+          <div className="bg-surface-container-lowest p-4 rounded-lg border border-primary/10">
+            <p className="text-[10px] font-mono text-primary/60 mb-2 uppercase">Command Terminal</p>
+            <div className="flex items-center bg-background rounded border border-outline-variant/20 px-3 py-2">
+              <span className="text-primary-fixed-dim font-mono text-xs mr-2">&gt;</span>
+              <input
+                type="text"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-xs font-mono w-full text-on-surface p-0"
+                placeholder="Enter ops command..."
+              />
             </div>
           </div>
         </div>

@@ -13,26 +13,45 @@ html {
 }
 
 body {
-  background-color: #ffffff;
-  color: #1f2937;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #0e131f;
+  color: #dde2f3;
 }
 
-/* Custom scrollbar */
+/* Custom scrollbar - dark theme */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f3f4f6;
+  background: #0e131f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 4px;
+  background: #2f3542;
+  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #343946;
+}
+
+/* Utility classes */
+@layer utilities {
+  .glass-panel {
+    background: rgba(47, 53, 66, 0.6);
+    backdrop-filter: blur(24px);
+  }
+
+  .amber-glow {
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.3));
+  }
+
+  .amber-glow-box {
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+  }
+
+  .shimmer-future {
+    background: radial-gradient(circle at top left, rgba(255, 185, 95, 0.05) 0%, rgba(26, 32, 44, 1) 100%);
+  }
 }

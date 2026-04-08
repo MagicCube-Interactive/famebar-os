@@ -66,24 +66,24 @@ export default function OrdersPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">Order History</h1>
-        <p className="text-gray-400">View and manage all your past purchases</p>
+        <h1 className="text-3xl font-bold text-on-surface mb-2">Order History</h1>
+        <p className="text-on-surface-variant">View and manage all your past purchases</p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
           <p className="text-xs font-semibold text-gray-500 mb-2">Total Orders</p>
-          <p className="text-3xl font-bold text-amber-300">{orders.length}</p>
+          <p className="text-3xl font-bold text-primary">{orders.length}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
           <p className="text-xs font-semibold text-gray-500 mb-2">Total Spent</p>
-          <p className="text-3xl font-bold text-emerald-400">${totalSpent.toFixed(2)}</p>
+          <p className="text-3xl font-bold text-secondary">${totalSpent.toFixed(2)}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
           <p className="text-xs font-semibold text-gray-500 mb-2">Tokens Earned</p>
           <div className="flex items-baseline gap-1">
-            <p className="text-3xl font-bold text-yellow-400">{totalTokens.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-primary">{totalTokens.toLocaleString()}</p>
             <p className="text-xs text-gray-500">$FAME</p>
           </div>
         </div>
@@ -92,7 +92,7 @@ export default function OrdersPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 flex-wrap">
         <HiOutlineAdjustments className="h-4 w-4 text-gray-500" />
-        <span className="text-sm font-semibold text-gray-300">Filter:</span>
+        <span className="text-sm font-semibold text-on-surface-variant">Filter:</span>
         <div className="flex gap-2 flex-wrap">
           {(['all', 'pending', 'delivered', 'refunded'] as const).map((status) => (
             <button
@@ -100,8 +100,8 @@ export default function OrdersPage() {
               onClick={() => setStatusFilter(status)}
               className={`rounded-lg px-4 py-2 text-sm font-semibold transition-all ${
                 statusFilter === status
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50'
+                  ? 'bg-primary-container text-on-primary'
+                  : 'bg-surface-container-highest text-gray-300 hover:bg-surface-container-highest/80'
               }`}
             >
               {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
@@ -114,7 +114,7 @@ export default function OrdersPage() {
       <div className="space-y-4">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+            <div className="w-8 h-8 rounded-full border-4 border-primary-container border-t-transparent animate-spin" />
           </div>
         ) : filteredOrders.length > 0 ? (
           filteredOrders.map((order) => {
@@ -136,18 +136,18 @@ export default function OrdersPage() {
             );
           })
         ) : orders.length === 0 ? (
-          <div className="rounded-xl border border-gray-700/50 bg-gray-800/20 p-12 text-center">
-            <p className="text-gray-400 mb-4">You haven't placed any orders yet</p>
-            <a href="/buyer/shop" className="text-amber-300 hover:text-amber-400 font-semibold">
+          <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-12 text-center">
+            <p className="text-on-surface-variant mb-4">You haven't placed any orders yet</p>
+            <a href="/buyer/shop" className="text-primary hover:text-primary-fixed-dim font-semibold">
               Start Shopping →
             </a>
           </div>
         ) : (
-          <div className="rounded-xl border border-gray-700/50 bg-gray-800/20 p-12 text-center">
-            <p className="text-gray-400 mb-4">No orders with this status</p>
+          <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-12 text-center">
+            <p className="text-on-surface-variant mb-4">No orders with this status</p>
             <button
               onClick={() => setStatusFilter('all')}
-              className="text-amber-300 hover:text-amber-400 font-semibold"
+              className="text-primary hover:text-primary-fixed-dim font-semibold"
             >
               Clear filters
             </button>
@@ -156,24 +156,24 @@ export default function OrdersPage() {
       </div>
 
       {/* Status Guide */}
-      <div className="rounded-xl border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
-        <h3 className="font-semibold text-gray-100 mb-3">Understanding Order Status</h3>
+      <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-6">
+        <h3 className="font-semibold text-on-surface mb-3">Understanding Order Status</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="font-semibold text-yellow-400 mb-1">⏳ Pending</p>
-            <p className="text-gray-400">Order received, processing payment</p>
+            <p className="font-semibold text-primary mb-1">⏳ Pending</p>
+            <p className="text-on-surface-variant">Order received, processing payment</p>
           </div>
           <div>
-            <p className="font-semibold text-blue-400 mb-1">✓ Settled</p>
-            <p className="text-gray-400">Payment confirmed — within 14-day window</p>
+            <p className="font-semibold text-tertiary mb-1">✓ Settled</p>
+            <p className="text-on-surface-variant">Payment confirmed — within 14-day window</p>
           </div>
           <div>
-            <p className="font-semibold text-emerald-400 mb-1">✓✓ Delivered</p>
-            <p className="text-gray-400">Commissions released, tokens available</p>
+            <p className="font-semibold text-secondary mb-1">✓✓ Delivered</p>
+            <p className="text-on-surface-variant">Commissions released, tokens available</p>
           </div>
           <div>
-            <p className="font-semibold text-red-400 mb-1">↩ Refunded</p>
-            <p className="text-gray-400">Order refunded, commissions clawed back</p>
+            <p className="font-semibold text-error mb-1">↩ Refunded</p>
+            <p className="text-on-surface-variant">Order refunded, commissions clawed back</p>
           </div>
         </div>
       </div>

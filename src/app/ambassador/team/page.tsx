@@ -45,110 +45,110 @@ export default function TeamPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-100">Your Team</h1>
-        <p className="mt-2 text-gray-400">Manage and grow your network</p>
+        <h1 className="text-3xl font-bold text-on-surface">Your Team</h1>
+        <p className="mt-2 text-on-surface-variant">Manage and grow your network</p>
       </div>
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-4">
+        <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Total Network Size</p>
-          <p className="mt-2 text-3xl font-bold text-blue-400">{teamStats.totalTeamSize}</p>
-          <p className="mt-1 text-xs text-blue-300">across all 6 tiers</p>
+          <p className="mt-2 text-3xl font-bold text-tertiary">{teamStats.totalTeamSize}</p>
+          <p className="mt-1 text-xs text-tertiary">across all 6 tiers</p>
         </div>
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-950/20 p-4">
+        <div className="rounded-lg border border-secondary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Active Members</p>
-          <p className="mt-2 text-3xl font-bold text-emerald-400">{teamStats.activeMembers}</p>
-          <p className="mt-1 text-xs text-emerald-300">
+          <p className="mt-2 text-3xl font-bold text-secondary">{teamStats.activeMembers}</p>
+          <p className="mt-1 text-xs text-secondary">
             {Math.round((teamStats.activeMembers / teamStats.totalTeamSize) * 100)}% active rate
           </p>
         </div>
-        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4">
+        <div className="rounded-lg border border-primary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">New This Week</p>
-          <p className="mt-2 text-3xl font-bold text-amber-400">+{teamStats.newRecruitsThisWeek}</p>
-          <p className="mt-1 text-xs text-amber-300">recruits joined</p>
+          <p className="mt-2 text-3xl font-bold text-primary-fixed-dim">+{teamStats.newRecruitsThisWeek}</p>
+          <p className="mt-1 text-xs text-primary">recruits joined</p>
         </div>
-        <div className="rounded-lg border border-orange-500/30 bg-orange-950/20 p-4">
+        <div className="rounded-lg border border-orange-500/30 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Stalled Members</p>
           <p className="mt-2 text-3xl font-bold text-orange-400">{teamStats.stalledMembers}</p>
           <p className="mt-1 text-xs text-orange-300">no sales in 30 days</p>
         </div>
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-950/20 p-4">
+        <div className="rounded-lg border border-primary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Direct Recruits</p>
-          <p className="mt-2 text-3xl font-bold text-yellow-400">{teamStats.directRecruits}</p>
-          <p className="mt-1 text-xs text-yellow-300">L1 ambassadors</p>
+          <p className="mt-2 text-3xl font-bold text-primary">{teamStats.directRecruits}</p>
+          <p className="mt-1 text-xs text-primary">L1 ambassadors</p>
         </div>
-        <div className="rounded-lg border border-purple-500/30 bg-purple-950/20 p-4">
+        <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Network Sales (MTD)</p>
-          <p className="mt-2 text-3xl font-bold text-purple-400">
+          <p className="mt-2 text-3xl font-bold text-tertiary">
             ${teamStats.teamSalesThisMonth.toLocaleString()}
           </p>
-          <p className="mt-1 text-xs text-purple-300">from your team</p>
+          <p className="mt-1 text-xs text-tertiary">from your team</p>
         </div>
       </div>
 
       {/* Invite CTA */}
-      <div className="rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-950/30 to-yellow-950/20 p-6">
+      <div className="rounded-lg border border-primary/20 bg-surface-container-low p-6">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-start gap-4">
-            <UserPlus className="h-6 w-6 text-amber-400 flex-shrink-0 mt-0.5" />
+            <UserPlus className="h-6 w-6 text-primary-fixed-dim flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-semibold text-amber-300">Grow Your Team</h3>
-              <p className="mt-1 text-sm text-gray-300">
+              <h3 className="font-semibold text-primary">Grow Your Team</h3>
+              <p className="mt-1 text-sm text-on-surface-variant">
                 Every recruit you add becomes another revenue stream. Your top 3 teammates generate 40%+ of network income.
               </p>
             </div>
           </div>
-          <button className="whitespace-nowrap rounded-lg bg-gradient-to-r from-amber-500 to-yellow-400 px-6 py-2.5 font-semibold text-gray-900 transition-all duration-200 hover:from-amber-600 hover:to-yellow-500">
+          <button className="whitespace-nowrap rounded-lg bg-gradient-to-r from-primary-container to-primary px-6 py-2.5 font-semibold text-on-primary transition-all duration-200 hover:opacity-90">
             Invite New Ambassador
           </button>
         </div>
       </div>
 
       {/* Direct Recruits */}
-      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 overflow-hidden">
-        <div className="border-b border-gray-700/30 bg-gray-900/50 px-6 py-4">
-          <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-100">
-            <Users className="h-5 w-5 text-amber-400" />
+      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low overflow-hidden">
+        <div className="border-b border-outline-variant/10 bg-surface-container px-6 py-4">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-on-surface">
+            <Users className="h-5 w-5 text-primary-fixed-dim" />
             Your Direct Recruits (L1)
           </h2>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-900/50">
-              <tr className="border-b border-gray-700/30">
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-400">Name</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-400">Tier Reached</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-400">Sales (MTD)</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-gray-400">Their Recruits</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-400">Status</th>
+            <thead className="bg-surface-container">
+              <tr className="border-b border-outline-variant/10">
+                <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">Name</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Tier Reached</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">Sales (MTD)</th>
+                <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">Their Recruits</th>
+                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Status</th>
               </tr>
             </thead>
             <tbody>
               {directRecruits.map((recruit) => (
-                <tr key={recruit.id} className="border-b border-gray-700/20 hover:bg-gray-800/50 transition-all">
+                <tr key={recruit.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low transition-all">
                   <td className="px-6 py-4">
-                    <p className="font-medium text-gray-200">{recruit.name}</p>
+                    <p className="font-medium text-on-surface">{recruit.name}</p>
                   </td>
                   <td className="px-6 py-4 text-center">
-                    <span className="inline-flex items-center rounded-full bg-amber-500/20 px-2.5 py-0.5 text-xs font-semibold text-amber-300">
+                    <span className="inline-flex items-center rounded-full bg-primary-fixed-dim/20 px-2.5 py-0.5 text-xs font-semibold text-primary">
                       L{recruit.tier}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="font-semibold text-gray-200">
+                    <p className="font-semibold text-on-surface">
                       ${recruit.sales > 0 ? recruit.sales.toLocaleString() : '—'}
                     </p>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <p className="font-semibold text-gray-200">{recruit.recruits}</p>
+                    <p className="font-semibold text-on-surface">{recruit.recruits}</p>
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span
                       className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                         recruit.active
-                          ? 'bg-emerald-500/20 text-emerald-300'
+                          ? 'bg-secondary/20 text-secondary'
                           : 'bg-orange-500/20 text-orange-300'
                       }`}
                     >
@@ -163,9 +163,9 @@ export default function TeamPage() {
       </div>
 
       {/* Team Composition by Level */}
-      <div className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6">
-        <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-gray-100">
-          <TrendingUp className="h-5 w-5 text-amber-400" />
+      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-6">
+        <h2 className="mb-6 flex items-center gap-2 text-lg font-semibold text-on-surface">
+          <TrendingUp className="h-5 w-5 text-primary-fixed-dim" />
           Network Composition by Level
         </h2>
 
@@ -174,13 +174,13 @@ export default function TeamPage() {
             <div key={level.level}>
               <div className="mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-500/20 font-bold text-amber-300 text-xs">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary-fixed-dim/20 font-bold text-primary text-xs">
                     L{level.level}
                   </span>
-                  <span className="text-sm font-medium text-gray-200">{level.count} ambassadors</span>
+                  <span className="text-sm font-medium text-on-surface">{level.count} ambassadors</span>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-semibold text-emerald-400">
+                  <p className="text-xs font-semibold text-secondary">
                     {level.active}/{level.count} active
                   </p>
                   <p className="text-xs text-gray-500">
@@ -189,9 +189,9 @@ export default function TeamPage() {
                 </div>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-gray-700/50">
+              <div className="h-2 overflow-hidden rounded-full bg-surface-container-highest">
                 <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-green-400"
+                  className="h-full bg-gradient-to-r from-primary-container to-primary"
                   style={{ width: `${(level.active / level.count) * 100}%` }}
                 />
               </div>
@@ -201,16 +201,16 @@ export default function TeamPage() {
       </div>
 
       {/* Activation Opportunity */}
-      <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-6">
+      <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-6">
         <div className="flex items-start gap-4">
-          <Zap className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+          <Zap className="h-5 w-5 text-tertiary flex-shrink-0 mt-0.5" />
           <div>
-            <h3 className="font-semibold text-blue-300">Reactivate Stalled Team Members</h3>
-            <p className="mt-2 text-sm text-blue-200">
+            <h3 className="font-semibold text-tertiary">Reactivate Stalled Team Members</h3>
+            <p className="mt-2 text-sm text-tertiary/80">
               You have {teamStats.stalledMembers} team members who haven't made sales in 30 days. Reach out with
               personalized support - reactivating just 50% could add $2,500+ to your monthly earnings!
             </p>
-            <button className="mt-4 inline-flex items-center gap-2 rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-600">
+            <button className="mt-4 inline-flex items-center gap-2 rounded-lg bg-tertiary px-4 py-2 text-sm font-semibold text-on-primary transition-all hover:opacity-90">
               View Stalled Members
             </button>
           </div>

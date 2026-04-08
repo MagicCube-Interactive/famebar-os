@@ -18,184 +18,155 @@ import {
   Megaphone,
   Calendar,
   User,
-  ChevronDown,
+  HelpCircle,
+  Bell,
+  LogOut,
 } from 'lucide-react';
 
-/**
- * Ambassador Portal Layout
- * Provides sidebar navigation and top bar for all ambassador routes
- */
-export default function AmbassadorLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+const navItems = [
+  { label: 'Dashboard', href: '/ambassador', icon: Home },
+  { label: 'Share Hub', href: '/ambassador/share', icon: Share2 },
+  { label: 'Earnings', href: '/ambassador/earnings', icon: TrendingUp },
+  { label: 'Token Vault', href: '/ambassador/tokens', icon: Coins },
+  { label: 'Customers', href: '/ambassador/customers', icon: Users },
+  { label: 'Team', href: '/ambassador/team', icon: Users2 },
+  { label: 'Training', href: '/ambassador/training', icon: BookOpen },
+  { label: 'Campaigns', href: '/ambassador/campaigns', icon: Megaphone },
+  { label: 'Events', href: '/ambassador/events', icon: Calendar },
+  { label: 'Profile', href: '/ambassador/profile', icon: User },
+];
+
+export default function AmbassadorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { userProfile, isAmbassador: isAmbassadorRole } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (!isAmbassadorRole || !userProfile || !isAmbassador(userProfile)) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
-        <div className="text-center">
-          <p className="text-gray-400">Access restricted to ambassadors</p>
-        </div>
+      <div className="flex h-screen items-center justify-center bg-background">
+        <p className="text-on-surface-variant">Access restricted to ambassadors</p>
       </div>
     );
   }
 
   const ambassador = userProfile;
 
-  // Navigation menu items
-  const navItems = [
-    { label: 'Dashboard', href: '/ambassador', icon: Home },
-    { label: 'Share Hub', href: '/ambassador/share', icon: Share2 },
-    { label: 'Earnings', href: '/ambassador/earnings', icon: TrendingUp },
-    { label: 'Token Vault', href: '/ambassador/tokens', icon: Coins },
-    { label: 'Customers', href: '/ambassador/customers', icon: Users },
-    { label: 'Team', href: '/ambassador/team', icon: Users2 },
-    { label: 'Training', href: '/ambassador/training', icon: BookOpen },
-    { label: 'Campaigns', href: '/ambassador/campaigns', icon: Megaphone },
-    { label: 'Events', href: '/ambassador/events', icon: Calendar },
-    { label: 'Profile', href: '/ambassador/profile', icon: User },
-  ];
-
-  // Get ambassador rank badge
-  const getRankBadge = (tier: number) => {
-    const tiers = ['Novice', 'Scout', 'Agent', 'Manager', 'Director', 'Executive', 'Founder'];
-    return tiers[tier] || 'Novice';
-  };
-
-  // Get today's earnings (mock)
-  const todayEarnings = 127.50;
+  const isActive = (href: string) =>
+    href === '/ambassador' ? pathname === '/ambassador' : pathname.startsWith(href);
 
   return (
-    <div className="flex h-screen bg-gray-950">
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-gray-900 to-gray-950 p-6 transition-transform duration-300 lg:relative lg:translate-x-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Sidebar Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-amber-400 to-yellow-500" />
-            <span className="font-bold text-gray-100">FameBar</span>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden"
-          >
-            <X className="h-5 w-5 text-gray-400" />
-          </button>
+    <div className="min-h-screen bg-background text-on-surface">
+      {/* Top Bar */}
+      <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-14 px-6 bg-background">
+        <div className="flex items-center gap-4">
+          <span className="text-lg font-bold tracking-tight text-on-surface">FameBar OS</span>
         </div>
+        <div className="flex items-center gap-4">
+          <button className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
+            <Bell className="h-5 w-5" />
+          </button>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-on-primary font-bold text-sm">
+            {ambassador.firstName?.[0] || 'A'}
+          </div>
+        </div>
+      </header>
 
-        {/* Navigation */}
-        <nav className="space-y-1">
+      {/* Sidebar - Desktop */}
+      <aside className="fixed left-0 top-0 h-full flex-col pt-4 pb-6 bg-gray-900 w-[240px] z-40 hidden md:flex">
+        <div className="px-6 mb-8 pt-10">
+          <h1 className="text-xl font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">FameBar OS</h1>
+          <p className="text-[10px] text-gray-500 font-medium tracking-widest uppercase mt-1">Enterprise Portal</p>
+        </div>
+        <nav className="flex-1 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
+            const active = isActive(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-300 border border-amber-500/30'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/50'
+                className={`flex items-center gap-3 py-3 px-4 text-sm font-medium transition-all duration-200 ${
+                  active
+                    ? 'bg-gray-800 text-primary-container border-l-[3px] border-primary-container'
+                    : 'text-gray-400 hover:bg-gray-800/50 hover:text-on-surface'
                 }`}
               >
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
-                {isActive && (
-                  <div className="ml-auto h-2 w-2 rounded-full bg-amber-400" />
-                )}
               </Link>
             );
           })}
         </nav>
-
-        {/* Footer Info */}
-        <div className="absolute bottom-6 left-6 right-6 space-y-3 border-t border-gray-700/50 pt-4">
-          <div className="rounded-lg bg-gray-800/50 p-3">
-            <p className="text-xs text-gray-500">Ambassador Tier</p>
-            <p className="mt-1 text-sm font-semibold text-amber-300">
-              {getRankBadge(ambassador.tier)}
-            </p>
+        <div className="mt-auto px-4 space-y-4">
+          <div className="flex items-center gap-3 text-gray-400 py-3 px-4 cursor-pointer hover:text-on-surface transition-all">
+            <HelpCircle className="h-5 w-5" />
+            <span className="text-sm font-medium">Help Center</span>
           </div>
-          <div className="rounded-lg bg-gray-800/50 p-3">
-            <p className="text-xs text-gray-500">Total Sales</p>
-            <p className="mt-1 text-sm font-semibold text-emerald-400">
-              ${ambassador.totalSales.toFixed(2)}
-            </p>
-          </div>
+          <button className="w-full py-3 px-4 bg-surface-container-high rounded-lg text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors">
+            Sign Out
+          </button>
         </div>
-      </div>
+      </aside>
+
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)}>
+          <aside className="w-[240px] h-full bg-gray-900 pt-16 pb-6" onClick={(e) => e.stopPropagation()}>
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const active = isActive(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 py-3 px-6 text-sm font-medium transition-all ${
+                      active
+                        ? 'bg-gray-800 text-primary-container border-l-[3px] border-primary-container'
+                        : 'text-gray-400 hover:bg-gray-800/50 hover:text-on-surface'
+                    }`}
+                  >
+                    <Icon className="h-5 w-5" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Mobile Menu Button (top-left on mobile) */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed top-4 left-4 z-50 p-2 md:hidden text-on-surface"
+      >
+        {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+      </button>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top Bar */}
-        <div className="border-b border-gray-800/50 bg-gray-900/50 backdrop-blur">
-          <div className="flex h-16 items-center justify-between px-6">
-            {/* Left side: Menu toggle + Title */}
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="lg:hidden"
-              >
-                <Menu className="h-6 w-6 text-gray-400" />
-              </button>
-              <h1 className="text-lg font-semibold text-gray-100">Ambassador Portal</h1>
-            </div>
-
-            {/* Right side: Stats + User */}
-            <div className="flex items-center gap-6">
-              {/* Quick Stats */}
-              <div className="hidden md:flex items-center gap-4 border-r border-gray-700/50 pr-6">
-                <div>
-                  <p className="text-xs text-gray-500">Today's Earnings</p>
-                  <p className="text-sm font-bold text-emerald-400">${todayEarnings.toFixed(2)}</p>
-                </div>
-                <div className="h-10 w-px bg-gray-700/50" />
-                <div>
-                  <p className="text-xs text-gray-500">Personal Sales</p>
-                  <p className="text-sm font-bold text-amber-300">
-                    ${ambassador.personalSalesThisMonth.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-
-              {/* User Profile */}
-              <div className="flex items-center gap-3">
-                <div className="text-right">
-                  <p className="text-sm font-medium text-gray-200">
-                    {ambassador.firstName} {ambassador.lastName}
-                  </p>
-                  <p className="text-xs text-gray-500">{getRankBadge(ambassador.tier)}</p>
-                </div>
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-yellow-500" />
-              </div>
-            </div>
-          </div>
+      <main className="md:ml-[240px] pt-14 min-h-screen">
+        <div className="max-w-[1400px] mx-auto p-6 md:p-8 lg:p-12">
+          {children}
         </div>
+      </main>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto bg-gray-950">
-          <div className="mx-auto max-w-7xl p-6">
-            {children}
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      {/* Mobile Bottom Nav */}
+      <nav className="fixed bottom-0 left-0 w-full bg-surface-container-low flex justify-around items-center py-3 md:hidden z-50">
+        {[
+          { icon: Home, label: 'Home', href: '/ambassador' },
+          { icon: TrendingUp, label: 'Earnings', href: '/ambassador/earnings' },
+          { icon: Users2, label: 'Team', href: '/ambassador/team' },
+          { icon: Share2, label: 'Share', href: '/ambassador/share' },
+          { icon: User, label: 'Profile', href: '/ambassador/profile' },
+        ].map(({ icon: Icon, label, href }) => (
+          <Link key={href} href={href} className={`flex flex-col items-center gap-1 ${isActive(href) ? 'text-primary-container' : 'text-on-surface-variant'}`}>
+            <Icon className="h-5 w-5" />
+            <span className="text-[10px]">{label}</span>
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

@@ -54,20 +54,20 @@ export default function CashLedgerPage() {
 
   const columns: Column<CommissionEntry>[] = [
     { key: 'ambassador_name', label: 'Ambassador', sortable: true },
-    { key: 'order_id', label: 'Order', render: (v) => <span className="font-mono text-xs text-gray-400">{String(v).slice(0, 13).toUpperCase()}</span> },
-    { key: 'tier', label: 'Tier', render: (v) => <span className="text-amber-300 font-semibold">T{String(v)}</span> },
-    { key: 'amount', label: 'Amount', sortable: true, render: (v) => <span className="text-emerald-400 font-semibold">${Number(v).toFixed(2)}</span> },
+    { key: 'order_id', label: 'Order', render: (v) => <span className="font-mono text-xs text-gray-500">{String(v).slice(0, 13).toUpperCase()}</span> },
+    { key: 'tier', label: 'Tier', render: (v) => <span className="text-primary-fixed-dim font-semibold">T{String(v)}</span> },
+    { key: 'amount', label: 'Amount', sortable: true, render: (v) => <span className="text-secondary font-semibold">${Number(v).toFixed(2)}</span> },
     {
       key: 'status',
       label: 'Status',
       render: (v) => {
         const colors: Record<string, string> = {
-          pending: 'bg-amber-500/20 text-amber-300',
-          available: 'bg-blue-500/20 text-blue-300',
-          paid: 'bg-emerald-500/20 text-emerald-300',
-          clawedback: 'bg-red-500/20 text-red-300',
+          pending: 'bg-primary-fixed-dim/20 text-primary-fixed-dim',
+          available: 'bg-tertiary/20 text-tertiary',
+          paid: 'bg-secondary/20 text-secondary',
+          clawedback: 'bg-error/20 text-error',
         };
-        return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${colors[String(v)] || 'bg-gray-500/20 text-gray-300'}`}>{String(v)}</span>;
+        return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${colors[String(v)] || 'bg-gray-500/20 text-on-surface-variant'}`}>{String(v)}</span>;
       },
     },
     { key: 'created_at', label: 'Date', sortable: true },
@@ -76,29 +76,29 @@ export default function CashLedgerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <DollarSign className="h-8 w-8 text-emerald-400" />
+        <DollarSign className="h-8 w-8 text-secondary" />
         <div>
-          <h1 className="text-3xl font-bold text-gray-100">Cash Ledger</h1>
-          <p className="text-gray-400">Commission events across all ambassadors</p>
+          <h1 className="text-3xl font-bold text-on-surface">Cash Ledger</h1>
+          <p className="text-gray-500">Commission events across all ambassadors</p>
         </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-amber-500/30 bg-amber-900/10 p-4">
+        <div className="rounded-xl border border-primary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Pending</p>
-          <p className="text-2xl font-bold text-amber-400 mt-1">${pendingTotal.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-primary mt-1">${pendingTotal.toFixed(2)}</p>
         </div>
-        <div className="rounded-xl border border-blue-500/30 bg-blue-900/10 p-4">
+        <div className="rounded-xl border border-tertiary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Available</p>
-          <p className="text-2xl font-bold text-blue-400 mt-1">${availableTotal.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-tertiary mt-1">${availableTotal.toFixed(2)}</p>
         </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-900/10 p-4">
+        <div className="rounded-xl border border-secondary/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Paid Out</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">${paidTotal.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-secondary mt-1">${paidTotal.toFixed(2)}</p>
         </div>
-        <div className="rounded-xl border border-red-500/30 bg-red-900/10 p-4">
+        <div className="rounded-xl border border-error/20 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Clawed Back</p>
-          <p className="text-2xl font-bold text-red-400 mt-1">${clawedbackTotal.toFixed(2)}</p>
+          <p className="text-2xl font-bold text-error mt-1">${clawedbackTotal.toFixed(2)}</p>
         </div>
       </div>
 
@@ -108,7 +108,7 @@ export default function CashLedgerPage() {
             key={s}
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              statusFilter === s ? 'bg-amber-500 text-white' : 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50'
+              statusFilter === s ? 'bg-primary-container text-on-primary' : 'bg-surface-container-highest text-gray-300 hover:bg-surface-container'
             }`}
           >
             {s === 'all' ? 'All' : s.charAt(0).toUpperCase() + s.slice(1)}
@@ -118,7 +118,7 @@ export default function CashLedgerPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
         </div>
       ) : (
         <DataTable data={filtered} columns={columns} />

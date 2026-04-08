@@ -60,13 +60,13 @@ export default function CampaignsPage() {
       label: 'Status',
       render: (v) => {
         const colors: Record<string, string> = {
-          active: 'bg-emerald-500/20 text-emerald-300',
-          draft: 'bg-gray-500/20 text-gray-300',
-          paused: 'bg-amber-500/20 text-amber-300',
-          completed: 'bg-blue-500/20 text-blue-300',
-          archived: 'bg-gray-600/20 text-gray-400',
+          active: 'bg-secondary/20 text-secondary',
+          draft: 'bg-gray-500/20 text-on-surface-variant',
+          paused: 'bg-primary-fixed-dim/20 text-primary-fixed-dim',
+          completed: 'bg-tertiary/20 text-tertiary',
+          archived: 'bg-gray-600/20 text-gray-500',
         };
-        return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${colors[String(v)] || 'bg-gray-500/20 text-gray-300'}`}>{String(v)}</span>;
+        return <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${colors[String(v)] || 'bg-gray-500/20 text-on-surface-variant'}`}>{String(v)}</span>;
       },
     },
     { key: 'channel', label: 'Channel', render: (v) => <span className="capitalize">{String(v)}</span> },
@@ -87,7 +87,7 @@ export default function CampaignsPage() {
         return r.delivered > 0 ? `${((r.clicked / r.delivered) * 100).toFixed(1)}%` : '—';
       },
     },
-    { key: 'converted', label: 'Converted', sortable: true, render: (v) => <span className="text-emerald-400 font-bold">{Number(v)}</span> },
+    { key: 'converted', label: 'Converted', sortable: true, render: (v) => <span className="text-secondary font-bold">{Number(v)}</span> },
     { key: 'start_date', label: 'Started', sortable: true },
   ];
 
@@ -95,26 +95,26 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-100">Campaigns</h1>
-          <p className="mt-1 text-gray-400">Marketing campaigns and performance</p>
+          <h1 className="text-3xl font-bold text-on-surface">Campaigns</h1>
+          <p className="mt-1 text-gray-500">Marketing campaigns and performance</p>
         </div>
-        <button className="rounded-lg bg-gradient-to-r from-emerald-600 to-emerald-500 px-4 py-2 text-sm font-semibold text-white hover:from-emerald-700 hover:to-emerald-600 transition-all">
+        <button className="rounded-lg bg-gradient-to-r from-primary-container to-primary px-4 py-2 text-sm font-semibold text-on-primary hover:opacity-90 transition-all">
           + New Campaign
         </button>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Active Campaigns</p>
-          <p className="text-2xl font-bold text-emerald-400 mt-1">{activeCount}</p>
+          <p className="text-2xl font-bold text-secondary mt-1">{activeCount}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Total Sent</p>
-          <p className="text-2xl font-bold text-amber-300 mt-1">{totalSent.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-primary-fixed-dim mt-1">{totalSent.toLocaleString()}</p>
         </div>
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-4">
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-4">
           <p className="text-xs text-gray-500">Total Converted</p>
-          <p className="text-2xl font-bold text-blue-400 mt-1">{totalConverted}</p>
+          <p className="text-2xl font-bold text-tertiary mt-1">{totalConverted}</p>
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function CampaignsPage() {
             key={s}
             onClick={() => setStatusFilter(s)}
             className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              statusFilter === s ? 'bg-amber-500 text-white' : 'bg-gray-700/30 text-gray-300 hover:bg-gray-700/50'
+              statusFilter === s ? 'bg-primary-container text-on-primary' : 'bg-surface-container-highest text-gray-300 hover:bg-surface-container'
             }`}
           >
             {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -134,11 +134,11 @@ export default function CampaignsPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
         </div>
       ) : campaigns.length === 0 ? (
-        <div className="rounded-xl border border-gray-700/50 bg-gray-800/20 p-12 text-center">
-          <p className="text-gray-400">No campaigns yet. Create your first one!</p>
+        <div className="rounded-xl border border-outline-variant/10 bg-surface-container-low p-12 text-center">
+          <p className="text-gray-500">No campaigns yet. Create your first one!</p>
         </div>
       ) : (
         <DataTable data={filtered} columns={columns} />
