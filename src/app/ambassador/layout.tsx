@@ -2,8 +2,9 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
+import { signOut } from '@/lib/supabase/auth';
 import {
   Menu,
   X,
@@ -37,8 +38,14 @@ const baseNavItems = [
 
 export default function AmbassadorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { userProfile, isAuthenticated, isAmbassador: isAmbassadorRole, isAdmin } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    try { await signOut(); } catch (e) { console.error(e); }
+    router.push('/login');
+  };
 
   // Build nav items — include Team Tree for tier 4+ ambassadors or admins
   const navItems = useMemo(() => {
@@ -117,7 +124,7 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
             <HelpCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Help Center</span>
           </div>
-          <button className="w-full py-3 px-4 bg-surface-container-high rounded-lg text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors">
+          <button onClick={handleSignOut} className="w-full py-3 px-4 bg-surface-container-high rounded-lg text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors">
             Sign Out
           </button>
         </div>

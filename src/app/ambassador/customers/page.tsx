@@ -1,178 +1,267 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { isAmbassador } from '@/types';
-import { Search, Filter, TrendingUp, Zap } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { ShoppingBag, DollarSign, TrendingUp, CalendarDays, Loader2 } from 'lucide-react';
+
+interface OrderRecord {
+  id: string;
+  ambassador_code: string;
+  ambassador_id: string;
+  total: number;
+  subtotal: number;
+  payment_status: string;
+  settlement_status: string;
+  payment_method: string;
+  customer_name: string | null;
+  items: Array<{ quantity: number; productName?: string; product_name?: string }>;
+  created_at: string;
+}
 
 export default function CustomersPage() {
-  const { userProfile } = useAuthContext();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterSegment, setFilterSegment] = useState<'all' | 'active' | 'lapsed' | 'new'>('all');
+  const { user, role } = useAuthContext();
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  if (!userProfile || !isAmbassador(userProfile)) {
+  useEffect(() => {
+    if (!user || role !== 'ambassador') return;
+
+    const fetchOrders = async () => {
+      const supabase = createClient();
+      const userId = user.id;
+
+      // First get ambassador's referral code
+      const { data: ambProfile } = await supabase
+        .from('ambassador_profiles')
+        .select('referral_code')
+        .eq('id', userId)
+        .single();
+
+      if (!ambProfile?.referral_code) {
+        setLoading(false);
+        return;
+      }
+
+      // Then fetch orders using that referral code
+      const { data: ordersData } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('ambassador_code', ambProfile.referral_code)
+        .order('created_at', { ascending: false });
+
+      if (ordersData) {
+        setOrders(ordersData as OrderRecord[]);
+      }
+
+      setLoading(false);
+    };
+
+    fetchOrders();
+  }, [user, role]);
+
+  if (!user || role !== 'ambassador') {
     return null;
   }
 
-  // Mock customer data
-  const customers = [
-    { id: 1, name: 'Sarah Johnson', segment: 'active', orders: 8, lastOrder: '2024-04-07', tokensEarned: 1250 },
-    { id: 2, name: 'Mike Chen', segment: 'active', orders: 5, lastOrder: '2024-04-03', tokensEarned: 875 },
-    { id: 3, name: 'Emma Davis', segment: 'new', orders: 1, lastOrder: '2024-04-08', tokensEarned: 250 },
-    { id: 4, name: 'James Wilson', segment: 'lapsed', orders: 3, lastOrder: '2024-03-15', tokensEarned: 625 },
-    { id: 5, name: 'Lisa Rodriguez', segment: 'active', orders: 12, lastOrder: '2024-04-06', tokensEarned: 2100 },
-    { id: 6, name: 'David Park', segment: 'new', orders: 1, lastOrder: '2024-04-05', tokensEarned: 175 },
-    { id: 7, name: 'Rachel Green', segment: 'lapsed', orders: 2, lastOrder: '2024-02-20', tokensEarned: 350 },
-    { id: 8, name: 'Tom Anderson', segment: 'active', orders: 6, lastOrder: '2024-04-01', tokensEarned: 950 },
-  ];
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const filteredCustomers = customers.filter(
-    c =>
-      (filterSegment === 'all' || c.segment === filterSegment) &&
-      c.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Computed stats
+  const totalOrders = orders.length;
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
-  const topCustomers = customers.sort((a, b) => b.tokensEarned - a.tokensEarned).slice(0, 3);
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthOrders = orders.filter(
+    (o) => new Date(o.created_at) >= startOfMonth
+  ).length;
 
-  const segmentStats = {
-    active: customers.filter(c => c.segment === 'active').length,
-    lapsed: customers.filter(c => c.segment === 'lapsed').length,
-    new: customers.filter(c => c.segment === 'new').length,
-  };
+  /**
+   * Extract total units from the items array.
+   * Handles both possible shapes: items could be an array of objects with quantity,
+   * or the column might be empty/null.
+   */
+  function getUnits(items: OrderRecord['items']): number {
+    if (!items || !Array.isArray(items)) return 0;
+    return items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+  }
+
+  /** Friendly label for payment method */
+  function formatPaymentMethod(method: string | null): string {
+    if (!method) return '\u2014';
+    const map: Record<string, string> = {
+      cash: 'Cash',
+      zelle: 'Zelle',
+      venmo: 'Venmo',
+    };
+    return map[method.toLowerCase()] || method;
+  }
+
+  /** Badge color for payment status */
+  function statusBadge(status: string) {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-500/20 text-green-400';
+      case 'pending':
+        return 'bg-yellow-500/20 text-yellow-400';
+      case 'failed':
+        return 'bg-red-500/20 text-red-400';
+      case 'cancelled':
+        return 'bg-gray-500/20 text-gray-400';
+      default:
+        return 'bg-gray-500/20 text-gray-400';
+    }
+  }
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-on-surface">Customers</h1>
-        <p className="mt-2 text-on-surface-variant">Manage and track your customer base</p>
+        <h1 className="text-3xl font-bold text-on-surface">Your Orders</h1>
+        <p className="mt-2 text-on-surface-variant">
+          Sales recorded using your referral code
+        </p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-4">
+          <div className="flex items-center gap-2">
+            <ShoppingBag className="h-4 w-4 text-tertiary" />
+            <p className="text-xs text-gray-500">Total Orders</p>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-tertiary">{totalOrders}</p>
+          <p className="mt-1 text-xs text-tertiary">all time</p>
+        </div>
         <div className="rounded-lg border border-secondary/20 bg-surface-container-low p-4">
-          <p className="text-xs text-gray-500">Active Customers</p>
-          <p className="mt-2 text-2xl font-bold text-secondary">{segmentStats.active}</p>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-secondary" />
+            <p className="text-xs text-gray-500">Total Revenue</p>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-secondary">
+            ${totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="mt-1 text-xs text-secondary">lifetime</p>
         </div>
         <div className="rounded-lg border border-primary/20 bg-surface-container-low p-4">
-          <p className="text-xs text-gray-500">New This Month</p>
-          <p className="mt-2 text-2xl font-bold text-primary-fixed-dim">{segmentStats.new}</p>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-primary-fixed-dim" />
+            <p className="text-xs text-gray-500">Avg Order Value</p>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-primary-fixed-dim">
+            ${averageOrderValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className="mt-1 text-xs text-primary">per order</p>
         </div>
-        <div className="rounded-lg border border-orange-500/30 bg-surface-container-low p-4">
-          <p className="text-xs text-gray-500">Lapsed (30+ days)</p>
-          <p className="mt-2 text-2xl font-bold text-orange-400">{segmentStats.lapsed}</p>
-        </div>
-      </div>
-
-      {/* Top Customers */}
-      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-6">
-        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-on-surface">
-          <TrendingUp className="h-5 w-5 text-primary-fixed-dim" />
-          Top Customers
-        </h2>
-        <div className="space-y-3">
-          {topCustomers.map((customer, index) => (
-            <div key={customer.id} className="flex items-center justify-between rounded-lg bg-surface-container p-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/20 text-xs font-bold text-primary-fixed-dim">
-                  #{index + 1}
-                </div>
-                <div>
-                  <p className="font-medium text-on-surface">{customer.name}</p>
-                  <p className="text-xs text-gray-500">{customer.orders} orders</p>
-                </div>
-              </div>
-              <p className="font-bold text-primary">{customer.tokensEarned} tokens</p>
-            </div>
-          ))}
+        <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-4">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-on-surface-variant" />
+            <p className="text-xs text-gray-500">This Month</p>
+          </div>
+          <p className="mt-2 text-3xl font-bold text-on-surface">{thisMonthOrders}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">orders this month</p>
         </div>
       </div>
 
-      {/* Filters & Search */}
-      <div className="flex flex-col gap-4 md:flex-row">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-lg border border-outline-variant/10 bg-surface-container py-2.5 pl-10 pr-4 text-sm text-on-surface placeholder-gray-500 focus:border-primary focus:outline-none"
-          />
+      {/* Orders Table or Empty State */}
+      {orders.length === 0 ? (
+        <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-12 text-center">
+          <ShoppingBag className="mx-auto h-12 w-12 text-on-surface-variant/40" />
+          <h3 className="mt-4 text-lg font-semibold text-on-surface">
+            No Orders Yet
+          </h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-on-surface-variant">
+            No sales have been recorded using your referral code yet. Ask your
+            admin to record orders with your code, or share it with customers so
+            sales are attributed to you.
+          </p>
         </div>
+      ) : (
+        <div className="overflow-hidden rounded-lg border border-outline-variant/10 bg-surface-container-low">
+          <div className="border-b border-outline-variant/10 bg-surface-container px-6 py-4">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-on-surface">
+              <ShoppingBag className="h-5 w-5 text-primary-fixed-dim" />
+              Order History ({totalOrders})
+            </h2>
+          </div>
 
-        <div className="flex gap-2">
-          {(['all', 'active', 'lapsed', 'new'] as const).map((segment) => (
-            <button
-              key={segment}
-              onClick={() => setFilterSegment(segment)}
-              className={`rounded-lg px-4 py-2.5 text-sm font-semibold transition-all duration-200 ${
-                filterSegment === segment
-                  ? 'bg-primary-container text-on-primary'
-                  : 'bg-surface-container-highest text-on-surface-variant hover:bg-surface-container-highest/80'
-              }`}
-            >
-              {segment === 'all' && 'All'}
-              {segment === 'active' && 'Active'}
-              {segment === 'lapsed' && 'Lapsed'}
-              {segment === 'new' && 'New'}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Customer List */}
-      <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-surface-container">
-              <tr className="border-b border-outline-variant/10">
-                <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">Name</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Orders</th>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">Last Order</th>
-                <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">Tokens Earned</th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCustomers.map((customer) => (
-                <tr key={customer.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low transition-all">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-on-surface">{customer.name}</p>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <p className="font-semibold text-on-surface">{customer.orders}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm text-on-surface-variant">{customer.lastOrder}</p>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <p className="font-bold text-primary">{customer.tokensEarned}</p>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        customer.segment === 'active'
-                          ? 'bg-secondary/20 text-secondary'
-                          : customer.segment === 'new'
-                          ? 'bg-tertiary/20 text-tertiary'
-                          : 'bg-orange-500/20 text-orange-300'
-                      }`}
-                    >
-                      {customer.segment === 'active' && 'Active'}
-                      {customer.segment === 'new' && 'New'}
-                      {customer.segment === 'lapsed' && 'Lapsed'}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surface-container">
+                <tr className="border-b border-outline-variant/10">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-on-surface-variant">
+                    Customer
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">
+                    Units
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-on-surface-variant">
+                    Total
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">
+                    Payment
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-semibold text-on-surface-variant">
+                    Status
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {filteredCustomers.length === 0 && (
-        <div className="rounded-lg border border-outline-variant/10 bg-surface-container-low p-8 text-center">
-          <p className="text-on-surface-variant">No customers found</p>
+              </thead>
+              <tbody>
+                {orders.map((order) => (
+                  <tr
+                    key={order.id}
+                    className="border-b border-outline-variant/10 transition-all hover:bg-surface-container-low"
+                  >
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-on-surface">
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-on-surface">
+                        {order.customer_name || 'Walk-in'}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-semibold text-on-surface">
+                        {getUnits(order.items)}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <p className="font-semibold text-on-surface">
+                        ${(order.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className="text-sm text-on-surface-variant">
+                        {formatPaymentMethod(order.payment_method)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize ${statusBadge(order.payment_status)}`}
+                      >
+                        {order.payment_status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

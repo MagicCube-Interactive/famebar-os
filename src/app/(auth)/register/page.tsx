@@ -191,13 +191,30 @@ function RegisterContent() {
         return;
       }
 
-      await signUpWithEmail({
+      const user = await signUpWithEmail({
         email,
         password,
         firstName,
         lastName,
         referralCode: referralCode.trim(),
       });
+
+      // Create ambassador_profiles + referral_codes for the new user
+      if (user) {
+        try {
+          await fetch('/api/setup-ambassador', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              referralCode: referralCode.trim(),
+            }),
+          });
+        } catch (setupErr) {
+          console.error('Ambassador setup error:', setupErr);
+          // Don't block registration — profile can be set up later
+        }
+      }
 
       router.push('/ambassador');
     } catch (err: any) {

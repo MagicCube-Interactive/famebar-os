@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { signOut } from '@/lib/supabase/auth';
 import {
   Home,
   PlusCircle,
@@ -38,6 +39,12 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try { await signOut(); } catch (e) { console.error(e); }
+    router.push('/login');
+  };
 
   const isActive = (href: string) =>
     href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
@@ -94,7 +101,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <HelpCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Help Center</span>
           </div>
-          <button className="w-full mt-4 py-2 px-4 rounded bg-surface-container-highest text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors border border-outline-variant/10">
+          <button onClick={handleSignOut} className="w-full mt-4 py-2 px-4 rounded bg-surface-container-highest text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors border border-outline-variant/10">
             Sign Out
           </button>
         </div>
