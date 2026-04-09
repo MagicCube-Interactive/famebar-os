@@ -8,7 +8,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-amber-500 animate-spin"></div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-secondary border-t-primary-container animate-spin"></div></div>}>
       <LoginContent />
     </Suspense>
   );
@@ -72,34 +72,40 @@ function LoginContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-gold-400 animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-secondary border-t-primary-container animate-spin mx-auto mb-4"></div>
+          <p className="text-on-surface-variant">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-md relative z-10">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Fame<span className="text-amber-500">Bar</span>
-          </h1>
-          <p className="text-gray-400">Direct-Selling Excellence</p>
+          <Link href="/">
+            <h1 className="text-4xl font-black mb-2">
+              <span className="text-on-surface">Fame</span>
+              <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
+            </h1>
+          </Link>
+          <p className="text-on-surface-variant text-sm">Direct-Selling Excellence</p>
         </div>
 
         {/* Login Card */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 shadow-xl">
-          <h2 className="text-2xl font-bold text-white mb-6">Sign In</h2>
+        <div className="bg-surface-container rounded-xl p-8 border border-outline-variant/10">
+          <h2 className="text-2xl font-bold text-on-surface mb-6">Sign In</h2>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-error-container/20 border border-error/30 rounded-lg">
+              <p className="text-error text-sm">{error}</p>
             </div>
           )}
 
@@ -107,7 +113,7 @@ function LoginContent() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-on-surface-variant mb-2">
                 Email Address
               </label>
               <input
@@ -117,13 +123,13 @@ function LoginContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
               />
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-on-surface-variant mb-2">
                 Password
               </label>
               <div className="relative">
@@ -134,13 +140,13 @@ function LoginContent() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 disabled:opacity-50"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-on-surface-variant hover:text-on-surface disabled:opacity-50"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,11 +166,11 @@ function LoginContent() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold rounded-lg transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20"
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <div className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin"></div>
                   Signing in...
                 </>
               ) : (
@@ -175,18 +181,18 @@ function LoginContent() {
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
-            <div className="flex-1 h-px bg-gray-600"></div>
-            <span className="text-gray-500 text-sm">or</span>
-            <div className="flex-1 h-px bg-gray-600"></div>
+            <div className="flex-1 h-px bg-outline-variant/20"></div>
+            <span className="text-on-surface-variant/50 text-sm">or</span>
+            <div className="flex-1 h-px bg-outline-variant/20"></div>
           </div>
 
           {/* Sign Up Link */}
           <div className="text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-on-surface-variant text-sm">
               Don't have an account?{' '}
               <Link
                 href="/register"
-                className="text-emerald-500 hover:text-emerald-400 font-medium transition"
+                className="text-primary-container hover:text-primary font-medium transition"
               >
                 Create one now
               </Link>
@@ -197,7 +203,7 @@ function LoginContent() {
           <div className="text-center mt-4">
             <button
               type="button"
-              className="text-gray-500 hover:text-gray-400 text-sm transition"
+              className="text-on-surface-variant/50 hover:text-on-surface-variant text-sm transition"
             >
               Forgot your password?
             </button>
@@ -205,8 +211,8 @@ function LoginContent() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-gray-500 text-xs">
-          <p>© 2024 FameBar OS. All rights reserved.</p>
+        <div className="text-center mt-8 text-on-surface-variant/40 text-xs">
+          <p>FameBar OS &middot; Aureum Obsidian</p>
         </div>
       </div>
     </div>
