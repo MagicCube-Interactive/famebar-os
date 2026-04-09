@@ -26,10 +26,10 @@ export interface RoleConfig {
 
 const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
   buyer: {
-    dashboardPath: '/buyer/dashboard',
+    dashboardPath: '/buyer',
     availableRoutes: [
       '/buyer',
-      '/buyer/dashboard',
+      '/buyer',
       '/buyer/shop',
       '/buyer/orders',
       '/buyer/rewards',
@@ -39,10 +39,10 @@ const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
     canAccess: (path: string) => path.startsWith('/buyer'),
   },
   ambassador: {
-    dashboardPath: '/ambassador/dashboard',
+    dashboardPath: '/ambassador',
     availableRoutes: [
       '/ambassador',
-      '/ambassador/dashboard',
+      '/ambassador',
       '/ambassador/recruits',
       '/ambassador/team',
       '/ambassador/commissions',
@@ -55,10 +55,10 @@ const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
       path.startsWith('/ambassador') || path.startsWith('/buyer'),
   },
   leader: {
-    dashboardPath: '/leader/dashboard',
+    dashboardPath: '/leader',
     availableRoutes: [
       '/leader',
-      '/leader/dashboard',
+      '/leader',
       '/leader/team',
       '/leader/analytics',
       '/leader/campaigns',
@@ -73,10 +73,10 @@ const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
       path.startsWith('/buyer'),
   },
   admin: {
-    dashboardPath: '/admin/dashboard',
+    dashboardPath: '/admin',
     availableRoutes: [
       '/admin',
-      '/admin/dashboard',
+      '/admin',
       '/admin/users',
       '/admin/orders',
       '/admin/commissions',

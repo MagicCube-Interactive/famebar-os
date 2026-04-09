@@ -47,7 +47,7 @@ function RegisterContent() {
   // Redirect if already authenticated
   React.useEffect(() => {
     if (isAuthenticated && !loading) {
-      router.push('/buyer/dashboard');
+      router.push('/buyer');
     }
   }, [isAuthenticated, loading, router]);
 
@@ -104,10 +104,10 @@ function RegisterContent() {
 
       // Redirect to dashboard after successful registration
       const dashboardPaths: Record<UserRole, string> = {
-        buyer: '/buyer/dashboard',
-        ambassador: '/ambassador/dashboard',
-        leader: '/leader/dashboard',
-        admin: '/admin/dashboard',
+        buyer: '/buyer',
+        ambassador: '/ambassador',
+        leader: '/leader',
+        admin: '/admin',
       };
 
       router.push(dashboardPaths[role]);

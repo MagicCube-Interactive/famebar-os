@@ -27,27 +27,23 @@ const ROUTE_CONFIG: Record<string, RouteConfig> = {
 
   // Buyer routes
   '/buyer': { requiredRoles: ['buyer', 'ambassador', 'leader', 'admin'] },
-  '/buyer/dashboard': { requiredRoles: ['buyer', 'ambassador', 'leader', 'admin'] },
   '/buyer/shop': { requiredRoles: ['buyer', 'ambassador', 'leader', 'admin'] },
   '/buyer/orders': { requiredRoles: ['buyer', 'ambassador', 'leader', 'admin'] },
   '/buyer/rewards': { requiredRoles: ['buyer', 'ambassador', 'leader', 'admin'] },
 
   // Ambassador routes
   '/ambassador': { requiredRoles: ['ambassador', 'leader', 'admin'] },
-  '/ambassador/dashboard': { requiredRoles: ['ambassador', 'leader', 'admin'] },
   '/ambassador/recruits': { requiredRoles: ['ambassador', 'leader', 'admin'] },
   '/ambassador/team': { requiredRoles: ['ambassador', 'leader', 'admin'] },
   '/ambassador/commissions': { requiredRoles: ['ambassador', 'leader', 'admin'] },
 
   // Leader routes
   '/leader': { requiredRoles: ['leader', 'admin'] },
-  '/leader/dashboard': { requiredRoles: ['leader', 'admin'] },
   '/leader/team': { requiredRoles: ['leader', 'admin'] },
   '/leader/analytics': { requiredRoles: ['leader', 'admin'] },
 
   // Admin routes
   '/admin': { requiredRoles: ['admin'] },
-  '/admin/dashboard': { requiredRoles: ['admin'] },
   '/admin/users': { requiredRoles: ['admin'] },
   '/admin/orders': { requiredRoles: ['admin'] },
   '/admin/commissions': { requiredRoles: ['admin'] },
@@ -58,10 +54,10 @@ const ROUTE_CONFIG: Record<string, RouteConfig> = {
 // ============================================================================
 
 const ROLE_DASHBOARD_PATHS: Record<string, string> = {
-  buyer: '/buyer/dashboard',
-  ambassador: '/ambassador/dashboard',
-  leader: '/leader/dashboard',
-  admin: '/admin/dashboard',
+  buyer: '/buyer',
+  ambassador: '/ambassador',
+  leader: '/leader',
+  admin: '/admin',
 };
 
 // ============================================================================
@@ -155,7 +151,7 @@ export async function middleware(request: NextRequest) {
       const userRole = 'buyer';
 
       if (!canAccessRoute(userRole, pathname)) {
-        const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/buyer/dashboard';
+        const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/buyer';
         return NextResponse.redirect(new URL(dashboardPath, request.url));
       }
 
@@ -168,7 +164,7 @@ export async function middleware(request: NextRequest) {
     // Check if user can access this route
     if (!canAccessRoute(userRole, pathname)) {
       // Redirect to user's dashboard
-      const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/buyer/dashboard';
+      const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/buyer';
       return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
 
