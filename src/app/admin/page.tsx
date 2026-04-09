@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 interface AdminMetrics {
@@ -24,6 +25,53 @@ export default function AdminOverview() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime');
   const [command, setCommand] = useState('');
+  const [settlementLoading, setSettlementLoading] = useState(false);
+  const [notification, setNotification] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
+  const [settlementResult, setSettlementResult] = useState<{
+    settledCount: number;
+    totalCommissionReleased: number;
+    totalTokensReleased: number;
+  } | null>(null);
+
+  const handleRunSettlement = async () => {
+    setSettlementLoading(true);
+    setNotification(null);
+    setSettlementResult(null);
+    try {
+      const res = await fetch('/api/settlement', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ daysOld: 14 }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSettlementResult({
+          settledCount: data.settledCount,
+          totalCommissionReleased: data.totalCommissionReleased,
+          totalTokensReleased: data.totalTokensReleased,
+        });
+        setNotification({
+          type: 'success',
+          message: `Settlement complete: ${data.settledCount} order${data.settledCount !== 1 ? 's' : ''} settled, ${fmt(data.totalCommissionReleased)} commissions released.`,
+        });
+      } else {
+        setNotification({
+          type: 'error',
+          message: data.error || 'Settlement failed. Please try again.',
+        });
+      }
+    } catch (err) {
+      setNotification({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Network error during settlement.',
+      });
+    } finally {
+      setSettlementLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -203,6 +251,46 @@ export default function AdminOverview() {
           </button>
         </div>
       </header>
+
+      {/* ── Inline Notification ── */}
+      {notification && (
+        <div
+          className={`flex items-center justify-between rounded-lg p-3 ${
+            notification.type === 'success'
+              ? 'bg-secondary/10 border border-secondary/30 text-secondary'
+              : 'bg-error/10 border border-error/30 text-error'
+          }`}
+        >
+          <p className="text-xs font-bold">{notification.message}</p>
+          <button
+            onClick={() => setNotification(null)}
+            className="ml-4 text-sm font-bold opacity-60 hover:opacity-100"
+          >
+            &times;
+          </button>
+        </div>
+      )}
+
+      {/* ── Settlement Results ── */}
+      {settlementResult && settlementResult.settledCount > 0 && (
+        <div className="bg-secondary/10 border border-secondary/30 rounded-lg p-3">
+          <p className="text-xs font-bold text-secondary mb-1">Settlement Results</p>
+          <div className="grid grid-cols-3 gap-4 text-[10px] font-mono text-secondary">
+            <div>
+              <span className="text-gray-500">ORDERS SETTLED:</span>{' '}
+              <span className="font-bold">{settlementResult.settledCount}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">COMMISSIONS RELEASED:</span>{' '}
+              <span className="font-bold">{fmt(settlementResult.totalCommissionReleased)}</span>
+            </div>
+            <div>
+              <span className="text-gray-500">TOKENS RELEASED:</span>{' '}
+              <span className="font-bold">{settlementResult.totalTokensReleased.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Top Stats Row (6 cards) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
@@ -480,8 +568,19 @@ export default function AdminOverview() {
                   <p className="text-[10px] text-gray-500 mt-1">
                     Paid orders awaiting settlement processing.
                   </p>
-                  <button className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline">
-                    Run Settlement
+                  <button
+                    onClick={handleRunSettlement}
+                    disabled={settlementLoading}
+                    className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline disabled:opacity-50 inline-flex items-center gap-1.5"
+                  >
+                    {settlementLoading ? (
+                      <>
+                        <span className="w-3 h-3 rounded-full border-2 border-primary-fixed-dim border-t-transparent animate-spin" />
+                        Running...
+                      </>
+                    ) : (
+                      'Run Settlement'
+                    )}
                   </button>
                 </div>
               )}
@@ -493,9 +592,9 @@ export default function AdminOverview() {
                   <p className="text-[10px] text-gray-500 mt-1">
                     Refunded orders requiring review and processing.
                   </p>
-                  <button className="mt-3 text-[10px] font-black text-error uppercase hover:underline">
+                  <Link href="/admin/orders" className="mt-3 text-[10px] font-black text-error uppercase hover:underline inline-block">
                     Process Refunds
-                  </button>
+                  </Link>
                 </div>
               )}
               {metrics.activeAmbassadors > 0 && (
@@ -506,9 +605,9 @@ export default function AdminOverview() {
                   <p className="text-[10px] text-gray-500 mt-1">
                     Currently qualified ambassadors generating revenue.
                   </p>
-                  <button className="mt-3 text-[10px] font-black text-secondary uppercase hover:underline">
+                  <Link href="/admin/ambassadors" className="mt-3 text-[10px] font-black text-secondary uppercase hover:underline inline-block">
                     View Network
-                  </button>
+                  </Link>
                 </div>
               )}
               {campaigns.length > 0 && (
@@ -519,9 +618,9 @@ export default function AdminOverview() {
                   <p className="text-[10px] text-gray-500 mt-1">
                     {campaigns.map((c) => c.name).join(', ')}
                   </p>
-                  <button className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline">
+                  <Link href="/admin/campaigns" className="mt-3 text-[10px] font-black text-primary-fixed-dim uppercase hover:underline inline-block">
                     Manage Campaigns
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

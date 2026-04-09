@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 interface User {
@@ -28,7 +28,18 @@ const ROLE_BADGE_STYLES: Record<string, string> = {
   buyer: 'bg-on-tertiary-fixed-variant/20 text-on-surface-variant border border-on-surface-variant/20',
 };
 
+const EDITABLE_ROLES = ['buyer', 'ambassador', 'leader', 'admin'] as const;
+
 const PER_PAGE = 10;
+
+function generateReferralCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'FB-';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -37,30 +48,44 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, role, is_verified, created_at')
-        .order('created_at', { ascending: false })
-        .limit(200);
+  // Edit modal state
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [editRole, setEditRole] = useState('');
+  const [editVerified, setEditVerified] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-      setUsers(
-        (data || []).map((u: any) => ({
-          id: u.id,
-          full_name: u.full_name,
-          email: u.email,
-          role: u.role,
-          is_verified: u.is_verified,
-          created_at: u.created_at?.split('T')[0] || '',
-        }))
-      );
-      setLoading(false);
-    };
-    fetchUsers();
+  // Invite modal state
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteRole, setInviteRole] = useState('buyer');
+
+  const fetchUsers = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, is_verified, created_at')
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    setUsers(
+      (data || []).map((u: any) => ({
+        id: u.id,
+        full_name: u.full_name,
+        email: u.email,
+        role: u.role,
+        is_verified: u.is_verified,
+        created_at: u.created_at?.split('T')[0] || '',
+      }))
+    );
+    setLoading(false);
   }, []);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  // Filter logic
   const filtered = users.filter((u) => {
     const matchRole = roleFilter === 'all' || u.role === roleFilter;
     const matchSearch =
@@ -81,7 +106,103 @@ export default function UsersPage() {
     currentPage * PER_PAGE
   );
 
-  const activeCount = users.filter((u) => u.is_verified).length;
+  // Stats
+  const totalCount = users.length;
+  const buyerCount = users.filter((u) => u.role === 'buyer').length;
+  const ambassadorCount = users.filter((u) => u.role === 'ambassador').length;
+  const leaderCount = users.filter((u) => u.role === 'leader').length;
+  const adminCount = users.filter((u) => u.role === 'admin').length;
+
+  // Open edit modal
+  function openEdit(user: User) {
+    setEditUser(user);
+    setEditRole(user.role);
+    setEditVerified(user.is_verified);
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  function closeEdit() {
+    setEditUser(null);
+    setSaveError('');
+    setSaveSuccess(false);
+  }
+
+  // Save user changes
+  async function handleSave() {
+    if (!editUser) return;
+    setSaving(true);
+    setSaveError('');
+    setSaveSuccess(false);
+
+    try {
+      const supabase = createClient();
+      const oldRole = editUser.role;
+      const newRole = editRole;
+      const isPromotingToAmbassador =
+        (newRole === 'ambassador' || newRole === 'leader') &&
+        oldRole !== 'ambassador' &&
+        oldRole !== 'leader';
+
+      // Update profiles table
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          role: newRole,
+          is_verified: editVerified,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', editUser.id);
+
+      if (profileError) throw profileError;
+
+      // If promoting to ambassador/leader, ensure ambassador_profiles record exists
+      if (isPromotingToAmbassador) {
+        const { data: existing } = await supabase
+          .from('ambassador_profiles')
+          .select('id')
+          .eq('id', editUser.id)
+          .single();
+
+        if (!existing) {
+          const { error: insertError } = await supabase
+            .from('ambassador_profiles')
+            .insert({
+              id: editUser.id,
+              referral_code: generateReferralCode(),
+              tier: 0,
+              rank: 'new',
+              is_founder: false,
+              is_active: false,
+              personal_sales_this_month: 0,
+              total_sales: 0,
+              total_recruits: 0,
+              kyc_verified: false,
+            });
+
+          if (insertError) throw insertError;
+        }
+      }
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editUser.id
+            ? { ...u, role: newRole, is_verified: editVerified }
+            : u
+        )
+      );
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        closeEdit();
+      }, 800);
+    } catch (err: any) {
+      setSaveError(err.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function formatDate(dateStr: string) {
     return dateStr.replace(/-/g, '.');
@@ -115,6 +236,8 @@ export default function UsersPage() {
     return pages;
   }
 
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : '';
+
   return (
     <div className="space-y-0">
       {/* Page Header */}
@@ -123,6 +246,27 @@ export default function UsersPage() {
         <p className="text-on-surface-variant text-sm">
           Manage system permissions and monitoring for all enterprise actors.
         </p>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        {[
+          { label: 'Total Users', value: totalCount, accent: 'text-on-surface' },
+          { label: 'Buyers', value: buyerCount, accent: 'text-on-surface-variant' },
+          { label: 'Ambassadors', value: ambassadorCount, accent: 'text-primary-fixed-dim' },
+          { label: 'Leaders', value: leaderCount, accent: 'text-tertiary' },
+          { label: 'Admins', value: adminCount, accent: 'text-primary' },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className="bg-surface-container rounded-xl border border-outline-variant/10 p-4"
+          >
+            <p className="text-[10px] font-mono text-on-surface-variant uppercase tracking-wider mb-1">
+              {stat.label}
+            </p>
+            <p className={`text-2xl font-bold ${stat.accent}`}>{stat.value}</p>
+          </div>
+        ))}
       </div>
 
       {/* Controls Panel */}
@@ -140,6 +284,17 @@ export default function UsersPage() {
               }`}
             >
               {ROLE_LABELS[r]}
+              <span className="ml-1.5 opacity-60">
+                {r === 'all'
+                  ? totalCount
+                  : r === 'buyer'
+                  ? buyerCount
+                  : r === 'ambassador'
+                  ? ambassadorCount
+                  : r === 'leader'
+                  ? leaderCount
+                  : adminCount}
+              </span>
             </button>
           ))}
         </div>
@@ -167,7 +322,10 @@ export default function UsersPage() {
               className="w-full pl-10 pr-4 py-2 bg-surface-container-lowest border-none rounded-lg text-sm text-on-surface focus:ring-1 focus:ring-primary/40 placeholder:text-on-surface-variant/50"
             />
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary-container to-primary text-on-primary rounded-lg font-bold text-sm shadow-lg shadow-primary/10">
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-br from-primary-container to-primary text-on-primary rounded-lg font-bold text-sm shadow-lg shadow-primary/10"
+          >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
             </svg>
@@ -198,12 +356,15 @@ export default function UsersPage() {
                 <th className="px-6 py-4 text-[10px] font-black text-on-surface-variant uppercase tracking-wider">
                   Join Date
                 </th>
+                <th className="px-6 py-4 text-[10px] font-black text-on-surface-variant uppercase tracking-wider text-right">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant/10">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-12 text-center text-on-surface-variant text-sm">
+                  <td colSpan={5} className="px-6 py-12 text-center text-on-surface-variant text-sm">
                     No users found.
                   </td>
                 </tr>
@@ -212,6 +373,7 @@ export default function UsersPage() {
                   <tr
                     key={user.id}
                     className="hover:bg-surface-container-highest/50 transition-colors cursor-pointer group"
+                    onClick={() => openEdit(user)}
                   >
                     {/* User Identity */}
                     <td className="px-6 py-4">
@@ -221,7 +383,7 @@ export default function UsersPage() {
                         </div>
                         <div>
                           <p className="text-sm font-bold text-on-surface">
-                            {user.full_name || '—'}
+                            {user.full_name || '\u2014'}
                           </p>
                           <p className="text-[11px] font-mono text-on-surface-variant/70">
                             {user.email}
@@ -232,14 +394,22 @@ export default function UsersPage() {
 
                     {/* System Role */}
                     <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(user);
+                        }}
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold hover:ring-1 hover:ring-primary/30 transition-all ${
                           ROLE_BADGE_STYLES[user.role] ||
                           'bg-surface-container-highest text-on-surface-variant'
                         }`}
+                        title="Click to change role"
                       >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </span>
+                        <svg className="w-3 h-3 opacity-0 group-hover:opacity-60 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
                     </td>
 
                     {/* Access Status */}
@@ -264,6 +434,22 @@ export default function UsersPage() {
                       <p className="text-xs font-mono text-on-surface-variant">
                         {formatDate(user.created_at)}
                       </p>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEdit(user);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-container-high text-on-surface-variant text-xs font-semibold hover:bg-primary-container/20 hover:text-primary-container transition-all opacity-0 group-hover:opacity-100"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Edit
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -342,7 +528,7 @@ export default function UsersPage() {
                     Math.max(users.length, 1)) *
                     100
                   ).toFixed(1)}%`
-                : '—'}
+                : '\u2014'}
             </h4>
             <div className="mt-4 flex items-center gap-2 text-secondary text-xs font-bold">
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -359,7 +545,9 @@ export default function UsersPage() {
             <p className="text-[10px] font-mono text-primary-fixed-dim uppercase tracking-tighter mb-1">
               Active Now
             </p>
-            <h4 className="text-3xl font-bold text-on-surface">{activeCount}</h4>
+            <h4 className="text-3xl font-bold text-on-surface">
+              {users.filter((u) => u.is_verified).length}
+            </h4>
             <div className="mt-4 flex items-center gap-2 text-on-surface-variant text-xs font-medium">
               <div className="flex -space-x-2">
                 <div className="w-5 h-5 rounded-full border-2 border-surface-container-low bg-surface-container-highest" />
@@ -391,6 +579,257 @@ export default function UsersPage() {
           </div>
         </div>
       </div>
+
+      {/* ============================================================ */}
+      {/* EDIT USER MODAL                                               */}
+      {/* ============================================================ */}
+      {editUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={closeEdit}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md mx-4 bg-surface-container rounded-2xl border border-outline-variant/20 shadow-2xl shadow-black/40 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-outline-variant/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-on-surface">Edit User</h3>
+                <button
+                  onClick={closeEdit}
+                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* User Info */}
+            <div className="px-6 py-4 bg-surface-container-high/50">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-surface-container-highest flex items-center justify-center text-on-surface-variant text-sm font-bold">
+                  {getInitials(editUser.full_name, editUser.email)}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-on-surface">
+                    {editUser.full_name || '\u2014'}
+                  </p>
+                  <p className="text-xs font-mono text-on-surface-variant/70">
+                    {editUser.email}
+                  </p>
+                  <p className="text-[10px] font-mono text-on-surface-variant/50 mt-0.5">
+                    ID: {editUser.id.slice(0, 8)}...
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div className="px-6 py-5 space-y-5">
+              {/* Role Selector */}
+              <div>
+                <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-2">
+                  System Role
+                </label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg text-sm text-on-surface focus:ring-1 focus:ring-primary/40 focus:outline-none appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                  }}
+                >
+                  {EDITABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </option>
+                  ))}
+                </select>
+                {(editRole === 'ambassador' || editRole === 'leader') &&
+                  editUser.role !== 'ambassador' &&
+                  editUser.role !== 'leader' && (
+                    <p className="mt-2 text-[11px] text-primary-fixed-dim">
+                      An ambassador profile will be created automatically with a new referral code.
+                    </p>
+                  )}
+              </div>
+
+              {/* Verified Toggle */}
+              <div>
+                <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-2">
+                  Access Status
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setEditVerified(!editVerified)}
+                  className="flex items-center gap-3 w-full px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg transition-colors hover:border-outline-variant/40"
+                >
+                  {/* Toggle switch */}
+                  <div
+                    className={`relative w-10 h-5 rounded-full transition-colors ${
+                      editVerified ? 'bg-secondary' : 'bg-error/40'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                        editVerified ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </div>
+                  <span className="text-sm text-on-surface">
+                    {editVerified ? (
+                      <span className="text-secondary font-semibold">Active / Verified</span>
+                    ) : (
+                      <span className="text-error font-semibold">Suspended / Unverified</span>
+                    )}
+                  </span>
+                </button>
+              </div>
+
+              {/* Error / Success */}
+              {saveError && (
+                <div className="px-4 py-2.5 bg-error/10 border border-error/20 rounded-lg">
+                  <p className="text-xs text-error font-medium">{saveError}</p>
+                </div>
+              )}
+              {saveSuccess && (
+                <div className="px-4 py-2.5 bg-secondary/10 border border-secondary/20 rounded-lg">
+                  <p className="text-xs text-secondary font-medium">User updated successfully.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-outline-variant/10 flex items-center justify-end gap-3">
+              <button
+                onClick={closeEdit}
+                className="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface-variant text-sm font-semibold hover:bg-surface-container-highest transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-5 py-2 rounded-lg bg-gradient-to-br from-primary-container to-primary text-on-primary text-sm font-bold shadow-lg shadow-primary/10 disabled:opacity-50 transition-all hover:shadow-primary/20"
+              >
+                {saving ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  'Save Changes'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================ */}
+      {/* INVITE USER MODAL                                             */}
+      {/* ============================================================ */}
+      {showInvite && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowInvite(false)}
+          />
+
+          {/* Modal */}
+          <div className="relative w-full max-w-md mx-4 bg-surface-container rounded-2xl border border-outline-variant/20 shadow-2xl shadow-black/40 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-5 border-b border-outline-variant/10">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-on-surface">Invite User</h3>
+                <button
+                  onClick={() => setShowInvite(false)}
+                  className="p-1 rounded-lg text-on-surface-variant hover:bg-surface-container-highest transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              <p className="text-sm text-on-surface-variant">
+                Share the registration link below with the user you want to invite. They will be assigned the selected role upon sign-up.
+              </p>
+
+              {/* Role selector */}
+              <div>
+                <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-2">
+                  Role
+                </label>
+                <select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg text-sm text-on-surface focus:ring-1 focus:ring-primary/40 focus:outline-none appearance-none cursor-pointer"
+                  style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 12px center',
+                    backgroundSize: '16px',
+                  }}
+                >
+                  {EDITABLE_ROLES.map((r) => (
+                    <option key={r} value={r}>
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Link display */}
+              <div>
+                <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-2">
+                  Invite Link
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={`${appUrl}/register?role=${inviteRole}`}
+                    className="flex-1 px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg text-xs font-mono text-on-surface select-all focus:outline-none"
+                  />
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `${appUrl}/register?role=${inviteRole}`
+                      );
+                    }}
+                    className="shrink-0 px-3 py-2.5 bg-primary-container/20 text-primary-container rounded-lg text-xs font-bold hover:bg-primary-container/30 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-outline-variant/10 flex items-center justify-end">
+              <button
+                onClick={() => setShowInvite(false)}
+                className="px-4 py-2 rounded-lg bg-surface-container-high text-on-surface-variant text-sm font-semibold hover:bg-surface-container-highest transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
