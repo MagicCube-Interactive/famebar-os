@@ -6,7 +6,7 @@
  */
 
 import { createClient } from './client';
-import type { UserRole, AmbassadorProfile, BuyerProfile } from '@/types';
+import type { UserRole, AmbassadorProfile } from '@/types';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -17,8 +17,7 @@ export interface SignUpData {
   password: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
-  referralCode?: string;
+  referralCode: string;
 }
 
 // ============================================================================
@@ -33,17 +32,17 @@ export interface SignUpData {
  * @throws Error if sign up fails
  */
 export async function signUpWithEmail(data: SignUpData) {
-  const { email, password, firstName, lastName, role, referralCode } = data;
+  const { email, password, firstName, lastName, referralCode } = data;
   const supabase = createClient();
 
-  // Create Supabase auth user with metadata
+  // Create Supabase auth user with metadata — all sign-ups are ambassadors
   const { data: authData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: `${firstName} ${lastName}`,
-        role,
+        role: 'ambassador' as const,
         referral_code: referralCode,
       },
     },
@@ -187,29 +186,6 @@ export async function getAmbassadorProfile(ambassadorId: string) {
 }
 
 /**
- * Get buyer profile from buyer_profiles table
- *
- * @param buyerId - Buyer ID (UUID)
- * @returns Buyer profile or null if not found
- */
-export async function getBuyerProfile(buyerId: string) {
-  const supabase = createClient();
-
-  const { data, error } = await supabase
-    .from('buyer_profiles')
-    .select('*')
-    .eq('id', buyerId)
-    .single();
-
-  if (error) {
-    console.error('Error fetching buyer profile:', error);
-    return null;
-  }
-
-  return data;
-}
-
-/**
  * Update user profile
  *
  * @param userId - User ID
@@ -253,30 +229,6 @@ export async function updateAmbassadorProfile(
       updated_at: new Date().toISOString(),
     })
     .eq('id', ambassadorId);
-
-  if (error) {
-    throw error;
-  }
-}
-
-/**
- * Update buyer profile
- *
- * @param buyerId - Buyer ID
- * @param updates - Partial profile updates
- */
-export async function updateBuyerProfile(
-  buyerId: string,
-  updates: Record<string, any>
-) {
-  const supabase = createClient();
-
-  const { error } = await supabase
-    .from('buyer_profiles')
-    .update({
-      ...updates,
-    })
-    .eq('id', buyerId);
 
   if (error) {
     throw error;

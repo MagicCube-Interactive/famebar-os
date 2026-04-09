@@ -1,8 +1,5 @@
 /**
- * useRole Hook
- *
- * Provides role-based routing and access control helpers
- * Determines available routes and dashboard paths based on user role
+ * useRole Hook — Two-role system (admin + ambassador)
  */
 
 'use client';
@@ -10,102 +7,52 @@
 import { useAuth } from './useAuth';
 import type { UserRole } from '@/types';
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
-
 export interface RoleConfig {
   dashboardPath: string;
   availableRoutes: string[];
   canAccess: (path: string) => boolean;
 }
 
-// ============================================================================
-// ROLE CONFIGURATION
-// ============================================================================
-
 const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
-  buyer: {
-    dashboardPath: '/buyer',
-    availableRoutes: [
-      '/buyer',
-      '/buyer',
-      '/buyer/shop',
-      '/buyer/orders',
-      '/buyer/rewards',
-      '/buyer/profile',
-      '/buyer/referrals',
-    ],
-    canAccess: (path: string) => path.startsWith('/buyer'),
-  },
   ambassador: {
     dashboardPath: '/ambassador',
     availableRoutes: [
       '/ambassador',
-      '/ambassador',
-      '/ambassador/recruits',
+      '/ambassador/share',
+      '/ambassador/earnings',
+      '/ambassador/tokens',
+      '/ambassador/customers',
       '/ambassador/team',
-      '/ambassador/commissions',
+      '/ambassador/team-tree',
+      '/ambassador/training',
       '/ambassador/campaigns',
+      '/ambassador/events',
       '/ambassador/profile',
-      '/buyer',
-      '/buyer/shop',
     ],
-    canAccess: (path: string) =>
-      path.startsWith('/ambassador') || path.startsWith('/buyer'),
-  },
-  leader: {
-    dashboardPath: '/leader',
-    availableRoutes: [
-      '/leader',
-      '/leader',
-      '/leader/team',
-      '/leader/analytics',
-      '/leader/campaigns',
-      '/leader/events',
-      '/leader/profile',
-      '/ambassador',
-      '/buyer',
-    ],
-    canAccess: (path: string) =>
-      path.startsWith('/leader') ||
-      path.startsWith('/ambassador') ||
-      path.startsWith('/buyer'),
+    canAccess: (path: string) => path.startsWith('/ambassador'),
   },
   admin: {
     dashboardPath: '/admin',
     availableRoutes: [
       '/admin',
-      '/admin',
       '/admin/users',
+      '/admin/ambassadors',
       '/admin/orders',
-      '/admin/commissions',
+      '/admin/record-sale',
+      '/admin/cash-ledger',
+      '/admin/token-ledger',
       '/admin/campaigns',
+      '/admin/events',
+      '/admin/fraud',
+      '/admin/content',
       '/admin/analytics',
       '/admin/settings',
-      '/leader',
       '/ambassador',
-      '/buyer',
     ],
-    canAccess: (path: string) => true, // Admin can access everything
+    canAccess: () => true,
   },
 };
 
-// ============================================================================
-// HOOK
-// ============================================================================
-
-/**
- * Hook to get role-based routing configuration
- *
- * @returns Role config object with dashboard path and access control helpers
- *
- * @example
- * const { dashboardPath, canAccessRoute } = useRole();
- * if (canAccessRoute('/ambassador/team')) {
- *   // User can access this route
- * }
- */
 export function useRole(): RoleConfig & { role: UserRole | null } {
   const { role } = useAuth();
 
@@ -118,48 +65,19 @@ export function useRole(): RoleConfig & { role: UserRole | null } {
     };
   }
 
-  const roleConfig = ROLE_ROUTES[role];
-
-  return {
-    role,
-    ...roleConfig,
-  };
+  return { role, ...ROLE_ROUTES[role] };
 }
 
-/**
- * Hook to check if user can access a specific route
- *
- * @param path - Route path to check access for
- * @returns true if user can access this route
- *
- * @example
- * const canAccess = useCanAccess('/ambassador/team');
- */
 export function useCanAccess(path: string): boolean {
   const { canAccess } = useRole();
   return canAccess(path);
 }
 
-/**
- * Hook to get user's dashboard path
- * Useful for redirecting users to their role-appropriate dashboard
- *
- * @returns Dashboard path for user's role, or '/login' if not authenticated
- *
- * @example
- * const dashboardPath = useDashboardPath();
- * router.push(dashboardPath);
- */
 export function useDashboardPath(): string {
   const { dashboardPath } = useRole();
   return dashboardPath;
 }
 
-/**
- * Hook to get available routes for user's role
- *
- * @returns Array of available route paths
- */
 export function useAvailableRoutes(): string[] {
   const { availableRoutes } = useRole();
   return availableRoutes;

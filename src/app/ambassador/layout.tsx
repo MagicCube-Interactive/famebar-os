@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
-import { isAmbassador } from '@/types';
 import {
   Menu,
   X,
@@ -20,10 +19,10 @@ import {
   User,
   HelpCircle,
   Bell,
-  LogOut,
+  GitBranch,
 } from 'lucide-react';
 
-const navItems = [
+const baseNavItems = [
   { label: 'Dashboard', href: '/ambassador', icon: Home },
   { label: 'Share Hub', href: '/ambassador/share', icon: Share2 },
   { label: 'Earnings', href: '/ambassador/earnings', icon: TrendingUp },
@@ -38,10 +37,26 @@ const navItems = [
 
 export default function AmbassadorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { userProfile, isAmbassador: isAmbassadorRole } = useAuthContext();
+  const { userProfile, isAuthenticated, isAmbassador: isAmbassadorRole, isAdmin } = useAuthContext();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  if (!isAmbassadorRole || !userProfile || !isAmbassador(userProfile)) {
+  // Build nav items — include Team Tree for tier 4+ ambassadors or admins
+  const navItems = useMemo(() => {
+    const items = [...baseNavItems];
+    const tier = userProfile?.tier ?? 0;
+    if (tier >= 4 || isAdmin) {
+      // Insert Team Tree after the Team item
+      const teamIdx = items.findIndex((i) => i.label === 'Team');
+      items.splice(teamIdx + 1, 0, {
+        label: 'Team Tree',
+        href: '/ambassador/team-tree',
+        icon: GitBranch,
+      });
+    }
+    return items;
+  }, [userProfile, isAdmin]);
+
+  if (!isAuthenticated || (!isAmbassadorRole && !isAdmin)) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
         <p className="text-on-surface-variant">Access restricted to ambassadors</p>

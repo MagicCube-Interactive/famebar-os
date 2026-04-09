@@ -31,13 +31,11 @@ function LoginContent() {
   React.useEffect(() => {
     if (isAuthenticated && role && !loading) {
       const dashboardPaths: Record<string, string> = {
-        buyer: '/buyer',
         ambassador: '/ambassador',
-        leader: '/leader',
         admin: '/admin',
       };
 
-      const destination = redirectPath || dashboardPaths[role] || '/buyer';
+      const destination = redirectPath || dashboardPaths[role] || '/ambassador';
       router.push(destination);
     }
   }, [isAuthenticated, role, loading, redirectPath, router]);

@@ -157,22 +157,7 @@ export async function POST(
       })
       .eq('id', orderId);
 
-    // Update buyer's fame balance if tokens were clawed back
-    if (totalTokensClawed > 0) {
-      const { data: buyer } = await supabase
-        .from('buyer_profiles')
-        .select('fame_balance')
-        .eq('id', order.buyer_id)
-        .single();
-
-      if (buyer) {
-        const newBalance = Math.max(0, (buyer.fame_balance || 0) - totalTokensClawed);
-        await supabase
-          .from('buyer_profiles')
-          .update({ fame_balance: newBalance })
-          .eq('id', order.buyer_id);
-      }
-    }
+    // Token clawback is recorded on token_events above (buyer_profiles table is dropped)
 
     return NextResponse.json({
       success: true,

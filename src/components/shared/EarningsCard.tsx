@@ -28,7 +28,7 @@ interface EarningsCardProps {
 /**
  * EarningsCard
  * Displays comprehensive earnings dashboard with cash, tokens, and tier progress
- * Used by both buyers (shows Hold-to-Save) and ambassadors (shows commissions)
+ * Used by ambassadors to show commission and token earnings
  * Dark premium theme with green accents for earnings, gold for rewards
  */
 export default function EarningsCard({

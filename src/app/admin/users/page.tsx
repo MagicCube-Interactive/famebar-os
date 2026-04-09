@@ -12,23 +12,19 @@ interface User {
   created_at: string;
 }
 
-const ROLES = ['all', 'buyer', 'ambassador', 'leader', 'admin'] as const;
+const ROLES = ['all', 'ambassador', 'admin'] as const;
 const ROLE_LABELS: Record<string, string> = {
   all: 'All',
-  buyer: 'Buyers',
   ambassador: 'Ambassadors',
-  leader: 'Leaders',
   admin: 'Admins',
 };
 
 const ROLE_BADGE_STYLES: Record<string, string> = {
   admin: 'bg-primary/10 text-primary border border-primary/20',
-  leader: 'bg-tertiary-container/20 text-tertiary border border-tertiary/20',
   ambassador: 'bg-primary-fixed/20 text-primary-fixed-dim border border-primary-fixed/20',
-  buyer: 'bg-on-tertiary-fixed-variant/20 text-on-surface-variant border border-on-surface-variant/20',
 };
 
-const EDITABLE_ROLES = ['buyer', 'ambassador', 'leader', 'admin'] as const;
+const EDITABLE_ROLES = ['ambassador', 'admin'] as const;
 
 const PER_PAGE = 10;
 
@@ -58,7 +54,7 @@ export default function UsersPage() {
 
   // Invite modal state
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteRole, setInviteRole] = useState('buyer');
+  const [inviteRole, setInviteRole] = useState('ambassador');
 
   const fetchUsers = useCallback(async () => {
     const supabase = createClient();
@@ -108,9 +104,7 @@ export default function UsersPage() {
 
   // Stats
   const totalCount = users.length;
-  const buyerCount = users.filter((u) => u.role === 'buyer').length;
   const ambassadorCount = users.filter((u) => u.role === 'ambassador').length;
-  const leaderCount = users.filter((u) => u.role === 'leader').length;
   const adminCount = users.filter((u) => u.role === 'admin').length;
 
   // Open edit modal
@@ -140,9 +134,8 @@ export default function UsersPage() {
       const oldRole = editUser.role;
       const newRole = editRole;
       const isPromotingToAmbassador =
-        (newRole === 'ambassador' || newRole === 'leader') &&
-        oldRole !== 'ambassador' &&
-        oldRole !== 'leader';
+        newRole === 'ambassador' &&
+        oldRole !== 'ambassador';
 
       // Update profiles table
       const { error: profileError } = await supabase
@@ -156,7 +149,7 @@ export default function UsersPage() {
 
       if (profileError) throw profileError;
 
-      // If promoting to ambassador/leader, ensure ambassador_profiles record exists
+      // If promoting to ambassador, ensure ambassador_profiles record exists
       if (isPromotingToAmbassador) {
         const { data: existing } = await supabase
           .from('ambassador_profiles')
@@ -249,12 +242,10 @@ export default function UsersPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
           { label: 'Total Users', value: totalCount, accent: 'text-on-surface' },
-          { label: 'Buyers', value: buyerCount, accent: 'text-on-surface-variant' },
           { label: 'Ambassadors', value: ambassadorCount, accent: 'text-primary-fixed-dim' },
-          { label: 'Leaders', value: leaderCount, accent: 'text-tertiary' },
           { label: 'Admins', value: adminCount, accent: 'text-primary' },
         ].map((stat) => (
           <div
@@ -287,12 +278,8 @@ export default function UsersPage() {
               <span className="ml-1.5 opacity-60">
                 {r === 'all'
                   ? totalCount
-                  : r === 'buyer'
-                  ? buyerCount
                   : r === 'ambassador'
                   ? ambassadorCount
-                  : r === 'leader'
-                  ? leaderCount
                   : adminCount}
               </span>
             </button>
@@ -652,9 +639,8 @@ export default function UsersPage() {
                     </option>
                   ))}
                 </select>
-                {(editRole === 'ambassador' || editRole === 'leader') &&
-                  editUser.role !== 'ambassador' &&
-                  editUser.role !== 'leader' && (
+                {editRole === 'ambassador' &&
+                  editUser.role !== 'ambassador' && (
                     <p className="mt-2 text-[11px] text-primary-fixed-dim">
                       An ambassador profile will be created automatically with a new referral code.
                     </p>

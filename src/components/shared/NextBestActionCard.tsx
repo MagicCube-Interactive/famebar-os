@@ -131,12 +131,6 @@ export default function NextBestActionCard({
  */
 function getCtaText(actionType: string): string {
   const ctaMap: Record<string, string> = {
-    // Buyer actions
-    hold_to_save_progress: 'Earn More $FAME',
-    reorder_ready: 'Place Order',
-    refer_friend: 'Share Code',
-    complete_age_verification: 'Verify Age',
-
     // Ambassador actions
     complete_kyc: 'Verify Now',
     add_telegram: 'Connect Telegram',
@@ -145,14 +139,6 @@ function getCtaText(actionType: string): string {
     reach_active_requirement: 'View Sales',
     first_recruit: 'Start Recruiting',
     tier_advancement: 'Advance Tier',
-
-    // Leader actions
-    reactivate_team: 'View Team',
-    approve_recruits: 'Review',
-    monthly_milestone: 'View Sales',
-    mentor_for_rank: 'Help Mentor',
-    unlock_depth_commission: 'Activate Team',
-    recruitment_challenge: 'Join Challenge',
 
     // Admin actions
     review_orders: 'Review Orders',

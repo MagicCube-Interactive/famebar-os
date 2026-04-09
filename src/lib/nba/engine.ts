@@ -8,12 +8,10 @@ import {
   NextBestAction,
   UserRole,
   AmbassadorProfile,
-  BuyerProfile,
   User,
-  HOLD_TO_SAVE_TIERS,
   PLATFORM_CONFIG,
 } from '@/types';
-import { getTeamStats, getInactiveAmbassadors, getNode } from '@/lib/referral/tree';
+import { getTeamStats, getNode } from '@/lib/referral/tree';
 import crypto from 'crypto';
 
 /**
@@ -24,14 +22,8 @@ export function getNextBestActions(user: User, maxActions: number = 5): NextBest
   const actions: NextBestAction[] = [];
 
   switch (user.role) {
-    case 'buyer':
-      actions.push(...generateBuyerActions(user as BuyerProfile));
-      break;
     case 'ambassador':
       actions.push(...generateAmbassadorActions(user as AmbassadorProfile));
-      break;
-    case 'leader':
-      actions.push(...generateLeaderActions(user as AmbassadorProfile));
       break;
     case 'admin':
       actions.push(...generateAdminActions(user));
@@ -49,94 +41,7 @@ export function getNextBestActions(user: User, maxActions: number = 5): NextBest
 }
 
 // ============================================================================
-// BUYER ACTIONS
-// ============================================================================
-
-function generateBuyerActions(buyer: BuyerProfile): NextBestAction[] {
-  const actions: NextBestAction[] = [];
-  const now = new Date();
-
-  // 1. Hold-to-Save Tier Progress
-  const nextTierThreshold = getNextHoldToSaveTier(buyer.fameBalance);
-  if (nextTierThreshold) {
-    const tokensNeeded = nextTierThreshold - buyer.fameBalance;
-    actions.push({
-      actionId: '', // Set by parent
-      userId: buyer.userId,
-      role: 'buyer',
-      actionType: 'hold_to_save_progress',
-      title: `${tokensNeeded.toLocaleString()} $FAME away from ${getHoldToSaveDiscount(nextTierThreshold)}% discount`,
-      description: `Hold ${nextTierThreshold.toLocaleString()} $FAME tokens to unlock ${getHoldToSaveDiscount(nextTierThreshold)}% off all future orders. Save your next purchase as a token holder!`,
-      progressCurrent: buyer.fameBalance,
-      progressTarget: nextTierThreshold,
-      progressUnit: 'tokens',
-      reward: `${getHoldToSaveDiscount(nextTierThreshold)}% personal order discount`,
-      priority: 2,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 2. Reorder Window Open
-  // In production, check last order date from order history
-  const daysSinceLastOrder = 30; // Placeholder
-  if (daysSinceLastOrder > 14) {
-    actions.push({
-      actionId: '',
-      userId: buyer.userId,
-      role: 'buyer',
-      actionType: 'reorder_ready',
-      title: 'Your reorder window is open',
-      description: `It's been ${daysSinceLastOrder} days since your last order. Reorder now to earn more $FAME and unlock discounts.`,
-      progressCurrent: daysSinceLastOrder,
-      progressTarget: 30,
-      progressUnit: 'days',
-      reward: '$FAME tokens (10 per $1 spent)',
-      priority: 2,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 3. Share & Earn (if satisfaction signals are high)
-  if (buyer.totalOrders >= 2) {
-    actions.push({
-      actionId: '',
-      userId: buyer.userId,
-      role: 'buyer',
-      actionType: 'refer_friend',
-      title: 'Share your code & earn rewards',
-      description: `Introduce friends to FameBar products and earn $FAME when they order using your referral link.`,
-      progressCurrent: 0,
-      progressTarget: 1,
-      progressUnit: 'referrals',
-      reward: 'Earning potential: $5-20 per referral',
-      priority: 3,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 4. Age Verification Reminder (if not verified)
-  if (!buyer.ageVerified) {
-    actions.push({
-      actionId: '',
-      userId: buyer.userId,
-      role: 'buyer',
-      actionType: 'complete_age_verification',
-      title: 'Verify age to unlock full benefits',
-      description: 'Complete quick age verification to access exclusive discounts and premium features.',
-      progressCurrent: 0,
-      progressTarget: 1,
-      progressUnit: 'verification',
-      reward: 'Access to all features + exclusive offers',
-      priority: 4,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  return actions;
-}
-
-// ============================================================================
-// NEW AMBASSADOR ACTIONS (Tier 0-2, not yet profitable)
+// AMBASSADOR ACTIONS
 // ============================================================================
 
 function generateAmbassadorActions(ambassador: AmbassadorProfile): NextBestAction[] {
@@ -282,141 +187,6 @@ function generateAmbassadorActions(ambassador: AmbassadorProfile): NextBestActio
 }
 
 // ============================================================================
-// LEADER ACTIONS (Tier 4+, team builders)
-// ============================================================================
-
-function generateLeaderActions(ambassador: AmbassadorProfile): NextBestAction[] {
-  const actions: NextBestAction[] = [];
-  const now = new Date();
-  const teamStats = getTeamStats(ambassador.userId);
-
-  // 1. Inactive Team Members Alert
-  const inactiveMembers = getInactiveAmbassadors(7);
-  const directedInactive = inactiveMembers.filter(member => {
-    const path = member.path || [];
-    return path.includes(ambassador.userId);
-  });
-
-  if (directedInactive.length > 0) {
-    actions.push({
-      actionId: '',
-      userId: ambassador.userId,
-      role: 'leader',
-      actionType: 'reactivate_team',
-      title: `${directedInactive.length} team members inactive for 7+ days`,
-      description: `Reach out to inactive members to help them get back on track. Active teams earn higher commissions.`,
-      progressCurrent: teamStats.activeCount,
-      progressTarget: teamStats.totalTeamSize,
-      progressUnit: 'active members',
-      reward: `Reactivate ${directedInactive.length} → +$${(directedInactive.length * 50).toFixed(2)}/month commission potential`,
-      priority: 1,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 2. Team Members Pending Approval
-  // In production, query pending ambassador approvals
-  const pendingApprovals = 0;
-  if (pendingApprovals > 0) {
-    actions.push({
-      actionId: '',
-      userId: ambassador.userId,
-      role: 'leader',
-      actionType: 'approve_recruits',
-      title: `${pendingApprovals} recruit${pendingApprovals > 1 ? 's' : ''} awaiting approval`,
-      description: `Review and approve pending new recruits to activate their codes and commissions.`,
-      progressCurrent: 0,
-      progressTarget: pendingApprovals,
-      progressUnit: 'approvals',
-      reward: `Activate commissions + build team momentum`,
-      priority: 1,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 3. Monthly Milestone Tracking
-  const monthlyTarget = 5000; // Example: $5k/month goal
-  const monthlyProgress = teamStats.totalTeamSalesThisMonth;
-  const remainingToMilestone = Math.max(0, monthlyTarget - monthlyProgress);
-
-  if (remainingToMilestone > 0) {
-    actions.push({
-      actionId: '',
-      userId: ambassador.userId,
-      role: 'leader',
-      actionType: 'monthly_milestone',
-      title: `$${remainingToMilestone.toFixed(2)} away from monthly milestone`,
-      description: `Your team is at $${monthlyProgress.toFixed(2)}. Hit $${monthlyTarget.toFixed(2)} this month to unlock bonus commission.`,
-      progressCurrent: monthlyProgress,
-      progressTarget: monthlyTarget,
-      progressUnit: '$',
-      reward: `$${(remainingToMilestone * 0.15).toFixed(2)} bonus + milestone badge`,
-      priority: 2,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 4. Team Members Close to Rank Milestone
-  const downlinePromoReadiness = getTeamMembersCloseToPomotion(ambassador.userId);
-  if (downlinePromoReadiness.length > 0) {
-    const summary = downlinePromoReadiness[0];
-    actions.push({
-      actionId: '',
-      userId: ambassador.userId,
-      role: 'leader',
-      actionType: 'mentor_for_rank',
-      title: `${downlinePromoReadiness.length} team members close to ranking up`,
-      description: `${summary.ambassadorName} needs ${summary.recruitsNeeded} more recruits for Tier ${summary.nextTier}. Help them cross the finish line!`,
-      progressCurrent: 0,
-      progressTarget: downlinePromoReadiness.length,
-      progressUnit: 'members',
-      reward: `When they rank up: +deeper commission tiers for you`,
-      priority: 2,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 5. Unclaimed Commission from Tiers 4-6
-  // This is a powerful motivator: show missed money
-  const unclaimedFromDepthTiers = calculateUnclaimedFromDepthTiers(ambassador.userId);
-  if (unclaimedFromDepthTiers > 0) {
-    actions.push({
-      actionId: '',
-      userId: ambassador.userId,
-      role: 'leader',
-      actionType: 'unlock_depth_commission',
-      title: `You left $${unclaimedFromDepthTiers.toFixed(2)} on the table this month`,
-      description: `Your L4-L6 members would have earned you money, but they weren't active. Activate them to unlock deeper commission.`,
-      progressCurrent: 0,
-      progressTarget: 1,
-      progressUnit: 'action',
-      reward: `Activate L4-6 members → +$${unclaimedFromDepthTiers.toFixed(2)}/month recurring`,
-      priority: 3,
-      createdAt: now.toISOString(),
-    });
-  }
-
-  // 6. Recruitment Challenge (gamification)
-  const recruitsThisMonth = 0; // In production, count recruits by createdAt
-  actions.push({
-    actionId: '',
-    userId: ambassador.userId,
-    role: 'leader',
-    actionType: 'recruitment_challenge',
-    title: `This month's recruitment challenge: 5 new recruits`,
-    description: `Recruit 5 new members this month to unlock exclusive team bonuses and event invitations.`,
-    progressCurrent: recruitsThisMonth,
-    progressTarget: 5,
-    progressUnit: 'recruits',
-    reward: `$500 bonus + VIP event access`,
-    priority: 3,
-    createdAt: now.toISOString(),
-  });
-
-  return actions.slice(0, 5);
-}
-
-// ============================================================================
 // ADMIN ACTIONS
 // ============================================================================
 
@@ -522,26 +292,6 @@ function generateAdminActions(user: User): NextBestAction[] {
 // HELPER FUNCTIONS
 // ============================================================================
 
-function getNextHoldToSaveTier(currentBalance: number): number | null {
-  const tiers = [10000, 25000, 50000, 100000];
-  for (const tier of tiers) {
-    if (currentBalance < tier) {
-      return tier;
-    }
-  }
-  return null; // Already at max tier
-}
-
-function getHoldToSaveDiscount(tokenThreshold: number): number {
-  const discounts: Record<number, number> = {
-    10000: 5,
-    25000: 10,
-    50000: 15,
-    100000: 20,
-  };
-  return discounts[tokenThreshold] || 0;
-}
-
 function getOnboardingProgress(ambassadorId: string): { completed: number; total: number } {
   // In production, query onboarding state from DB
   // Typical flow: profile setup, KYC, Telegram, share code, first order, first recruit
@@ -564,19 +314,6 @@ function getPendingOnboardingItems(ambassadorId: string): Array<{ title: string;
       description: 'Connect Telegram for real-time commission alerts and team updates.',
     },
   ];
-}
-
-function getTeamMembersCloseToPomotion(
-  ambassadorId: string
-): Array<{ ambassadorName: string; recruitsNeeded: number; nextTier: number }> {
-  // In production, check team members within 2-3 recruits of next tier
-  return [];
-}
-
-function calculateUnclaimedFromDepthTiers(ambassadorId: string): number {
-  // In production, calculate commission that would have been earned if L4-6 were active
-  // This is: sum of (L4-6 member sales × tier rate) for members who currently don't meet active requirement
-  return 0;
 }
 
 /**

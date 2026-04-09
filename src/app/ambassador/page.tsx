@@ -12,8 +12,12 @@ import {
   CalendarDays,
   Zap,
   Lock,
+  Activity,
+  ShoppingBag,
 } from 'lucide-react';
 import { PLATFORM_CONFIG } from '@/types';
+import RevenueWaterfall from '@/components/shared/RevenueWaterfall';
+import TeamHeatmap from '@/components/shared/TeamHeatmap';
 
 interface AmbassadorData {
   referral_code: string;
@@ -36,6 +40,23 @@ interface DashboardStats {
   newRecruitsThisWeek: number;
 }
 
+interface RecentOrder {
+  id: string;
+  created_at: string;
+  units: number;
+  total: number;
+  payment_method: string;
+  payment_status: string;
+}
+
+interface TeamMemberHeatmap {
+  id: string;
+  name: string;
+  status: 'active' | 'stalled' | 'new' | 'at-risk';
+  salesThisMonth: number;
+  recruits: number;
+}
+
 export default function AmbassadorPage() {
   const { user, role } = useAuthContext();
   const [ambassadorData, setAmbassadorData] = useState<AmbassadorData | null>(null);
@@ -50,6 +71,9 @@ export default function AmbassadorPage() {
   });
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberHeatmap[]>([]);
+  const [revenueByLevel, setRevenueByLevel] = useState<Record<number, number>>({});
 
   useEffect(() => {
     if (!user || role !== 'ambassador') return;
@@ -147,6 +171,85 @@ export default function AmbassadorPage() {
         newCustomersThisWeek: uniqueBuyers.size,
         newRecruitsThisWeek: weekRecruitsResult.count || 0,
       });
+
+      // Fetch tier-gated leader data for tier 4+ ambassadors
+      const ambTier = ambassadorResult.data?.tier ?? 0;
+      const ambRefCode = ambassadorResult.data?.referral_code ?? '';
+
+      if (ambTier >= 4) {
+        const [ordersResult, teamResult, revenueLevelsResult] = await Promise.all([
+          // Recent orders recorded by admin for this ambassador
+          supabase
+            .from('orders')
+            .select('id, created_at, units, total, payment_method, payment_status')
+            .eq('ambassador_code', ambRefCode)
+            .order('created_at', { ascending: false })
+            .limit(10),
+
+          // Team members for heatmap (direct recruits)
+          supabase
+            .from('ambassador_profiles')
+            .select('id, personal_sales_this_month, total_recruits, is_active, created_at, profiles!ambassador_profiles_id_fkey(full_name)')
+            .eq('sponsor_id', userId),
+
+          // Revenue by level from commission events
+          // TODO: Replace with actual L1-L6 aggregation query from Supabase
+          supabase
+            .from('commission_events')
+            .select('tier_level, amount')
+            .eq('ambassador_id', userId)
+            .eq('status', 'available'),
+        ]);
+
+        if (ordersResult.data) {
+          setRecentOrders(
+            ordersResult.data.map((o: any) => ({
+              id: o.id,
+              created_at: o.created_at,
+              units: o.units ?? 1,
+              total: Number(o.total) || 0,
+              payment_method: o.payment_method || 'N/A',
+              payment_status: o.payment_status || 'pending',
+            }))
+          );
+        }
+
+        if (teamResult.data) {
+          setTeamMembers(
+            teamResult.data.map((m: any) => {
+              const createdAt = new Date(m.created_at);
+              const daysSinceJoin = Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24));
+              let status: 'active' | 'stalled' | 'new' | 'at-risk' = 'active';
+              if (daysSinceJoin <= 30) status = 'new';
+              else if ((m.personal_sales_this_month ?? 0) === 0) status = 'at-risk';
+              else if (!m.is_active) status = 'stalled';
+
+              return {
+                id: m.id,
+                name: m.profiles?.full_name || 'Unknown',
+                status,
+                salesThisMonth: m.personal_sales_this_month ?? 0,
+                recruits: m.total_recruits ?? 0,
+              };
+            })
+          );
+        }
+
+        // Aggregate revenue by tier level
+        if (revenueLevelsResult.data) {
+          const byLevel: Record<number, number> = {};
+          revenueLevelsResult.data.forEach((r: any) => {
+            const lvl = r.tier_level ?? 0;
+            byLevel[lvl] = (byLevel[lvl] || 0) + Number(r.amount);
+          });
+          // Include personal sales as level 0
+          byLevel[0] = ambassadorResult.data?.personal_sales_this_month || 0;
+          setRevenueByLevel(byLevel);
+        } else {
+          // Fallback: at minimum show personal sales
+          setRevenueByLevel({ 0: ambassadorResult.data?.personal_sales_this_month || 0 });
+        }
+      }
 
       setLoading(false);
     };
@@ -593,6 +696,117 @@ export default function AmbassadorPage() {
           </div>
         </div>
       </section>
+
+      {/* ── My Sales - Recent Orders ── */}
+      {recentOrders.length > 0 && (
+        <section className="mt-12 space-y-6">
+          <div className="flex items-center gap-3">
+            <ShoppingBag className="h-5 w-5 text-secondary" />
+            <h2 className="text-xl font-bold text-on-surface">My Sales</h2>
+          </div>
+          <div className="bg-surface-container rounded-xl overflow-hidden shadow-lg shadow-black/20">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-widest text-on-surface-variant border-b border-outline-variant/10">
+                    <th className="px-6 py-4 font-bold">Date</th>
+                    <th className="px-6 py-4 font-bold">Units</th>
+                    <th className="px-6 py-4 font-bold">Total</th>
+                    <th className="px-6 py-4 font-bold">Payment Method</th>
+                    <th className="px-6 py-4 font-bold text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm divide-y divide-outline-variant/5">
+                  {recentOrders.map((order) => (
+                    <tr key={order.id} className="hover:bg-surface-container-high/50 transition-colors">
+                      <td className="px-6 py-4 text-on-surface-variant">
+                        {new Date(order.created_at).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-on-surface">{order.units}</td>
+                      <td className="px-6 py-4 font-bold text-secondary">
+                        ${order.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-6 py-4 text-on-surface-variant capitalize">{order.payment_method}</td>
+                      <td className="px-6 py-4 text-right">
+                        <span
+                          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-bold uppercase tracking-wide ${
+                            order.payment_status === 'paid'
+                              ? 'bg-emerald-500/20 text-emerald-400'
+                              : order.payment_status === 'pending'
+                              ? 'bg-amber-500/20 text-amber-400'
+                              : 'bg-red-500/20 text-red-400'
+                          }`}
+                        >
+                          {order.payment_status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── Tier 4+ Team Leadership Section ── */}
+      {ambassadorData && ambassadorData.tier >= 4 && (
+        <section className="mt-12 space-y-8">
+          <div className="flex items-center gap-3">
+            <Activity className="h-5 w-5 text-primary" />
+            <h2 className="text-xl font-bold text-primary-container">Team Leadership</h2>
+          </div>
+
+          {/* Revenue Waterfall - L1-L6 sales breakdown */}
+          <div className="bg-surface-container-low rounded-xl p-6 border border-outline-variant/10">
+            <h3 className="text-lg font-semibold text-on-surface mb-4">Revenue Waterfall</h3>
+            <p className="text-xs text-on-surface-variant mb-4">Sales breakdown by network level (Personal + L1-L6)</p>
+            <RevenueWaterfall data={revenueByLevel} />
+          </div>
+
+          {/* Team Activity Heatmap */}
+          <div className="bg-surface-container-low rounded-xl p-6 border border-outline-variant/10">
+            <h3 className="text-lg font-semibold text-on-surface mb-4">Team Activity Heatmap</h3>
+            <p className="text-xs text-on-surface-variant mb-4">Direct recruits colored by activity status</p>
+            <TeamHeatmap data={teamMembers} />
+          </div>
+
+          {/* Network Health Stats */}
+          <div className="bg-surface-container-low rounded-xl p-6 border border-outline-variant/10">
+            <h3 className="text-lg font-semibold text-on-surface mb-6">Network Health</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+              <div className="text-center">
+                <p className="text-3xl font-black text-emerald-400">
+                  {teamMembers.filter((m) => m.status === 'active').length}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">Active</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-blue-400">
+                  {teamMembers.filter((m) => m.status === 'new').length}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">New</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-amber-400">
+                  {teamMembers.filter((m) => m.status === 'stalled').length}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">Stalled</p>
+              </div>
+              <div className="text-center">
+                <p className="text-3xl font-black text-red-400">
+                  {teamMembers.filter((m) => m.status === 'at-risk').length}
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">At-Risk</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

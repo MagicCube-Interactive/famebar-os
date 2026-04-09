@@ -8,15 +8,11 @@ import {
   TrendingUp,
   Users,
   CheckCircle,
-  Shield,
-  Zap,
   Target,
   AlertCircle,
   Trophy,
   MessageSquare,
   Briefcase,
-  Award,
-  Activity,
   Rocket,
   LucideIcon,
 } from 'lucide-react';
@@ -26,12 +22,6 @@ import {
  */
 export function getActionIcon(actionType: string): LucideIcon {
   const iconMap: Record<string, LucideIcon> = {
-    // Buyer actions
-    hold_to_save_progress: TrendingUp,
-    reorder_ready: ShoppingCart,
-    refer_friend: Users,
-    complete_age_verification: Shield,
-
     // Ambassador actions
     complete_kyc: CheckCircle,
     add_telegram: MessageSquare,
@@ -40,14 +30,6 @@ export function getActionIcon(actionType: string): LucideIcon {
     reach_active_requirement: Target,
     first_recruit: Users,
     tier_advancement: Trophy,
-
-    // Leader actions
-    reactivate_team: Activity,
-    approve_recruits: CheckCircle,
-    monthly_milestone: Target,
-    mentor_for_rank: Award,
-    unlock_depth_commission: DollarSign,
-    recruitment_challenge: Rocket,
 
     // Admin actions
     review_orders: Briefcase,
@@ -90,23 +72,6 @@ export function getActionColor(
 
   // Action type based coloring for normal priority
   const typeColorMap: Record<string, ReturnType<typeof getActionColor>> = {
-    // Buyer
-    hold_to_save_progress: {
-      bgColor: 'bg-gradient-to-br from-amber-950/20 to-yellow-900/10',
-      borderColor: 'border-amber-500/20 hover:border-amber-500/40',
-      textColor: 'text-amber-300',
-    },
-    reorder_ready: {
-      bgColor: 'bg-gradient-to-br from-green-950/20 to-emerald-900/10',
-      borderColor: 'border-green-500/20 hover:border-green-500/40',
-      textColor: 'text-green-300',
-    },
-    refer_friend: {
-      bgColor: 'bg-gradient-to-br from-blue-950/20 to-cyan-900/10',
-      borderColor: 'border-blue-500/20 hover:border-blue-500/40',
-      textColor: 'text-blue-300',
-    },
-
     // Ambassador
     complete_kyc: {
       bgColor: 'bg-gradient-to-br from-purple-950/20 to-pink-900/10',
@@ -122,18 +87,6 @@ export function getActionColor(
       bgColor: 'bg-gradient-to-br from-yellow-950/20 to-amber-900/10',
       borderColor: 'border-yellow-500/20 hover:border-yellow-500/40',
       textColor: 'text-yellow-300',
-    },
-
-    // Leader
-    reactivate_team: {
-      bgColor: 'bg-gradient-to-br from-green-950/20 to-emerald-900/10',
-      borderColor: 'border-green-500/20 hover:border-green-500/40',
-      textColor: 'text-green-300',
-    },
-    unlock_depth_commission: {
-      bgColor: 'bg-gradient-to-br from-emerald-950/20 to-green-900/10',
-      borderColor: 'border-emerald-500/20 hover:border-emerald-500/40',
-      textColor: 'text-emerald-300',
     },
 
     // Admin
@@ -214,7 +167,3 @@ export function getPriorityLabel(priority: 1 | 2 | 3 | 4 | 5): {
   return priorityMap[priority] || priorityMap[3];
 }
 
-/**
- * Placeholder icon (replace with proper import once lucide-react is confirmed)
- */
-const ShoppingCart = TrendingUp; // Temporary placeholder

@@ -33,7 +33,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
     },
     {
       rank: 1,
-      label: 'Leader (L1)',
+      label: 'Tier 1',
       requirements: ['Recruit 1 person', '$500 personal sales'],
       rewards: ['10% on L1 recruits', 'Team dashboard', 'Access to events'],
       unlocked: currentRank >= 1,
@@ -42,7 +42,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
     },
     {
       rank: 2,
-      label: 'Senior Leader (L2)',
+      label: 'Tier 2',
       requirements: ['Recruit 2 people', '$1,500 team sales'],
       rewards: ['5% on L2 recruits', 'Analytics dashboard', 'Co-host events'],
       unlocked: currentRank >= 2,
@@ -51,16 +51,16 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
     },
     {
       rank: 3,
-      label: 'Director (L3)',
+      label: 'Tier 3',
       requirements: ['Recruit 3 people', '$3,000 team sales', '2 active L1s'],
-      rewards: ['4% on L3 recruits', 'Leadership training', 'Speaking slots'],
+      rewards: ['4% on L3 recruits', 'Training access', 'Speaking slots'],
       unlocked: currentRank >= 3,
       current: currentRank === 3,
       nextMilestone: currentRank === 2,
     },
     {
       rank: 4,
-      label: 'Executive (L4)',
+      label: 'Tier 4',
       requirements: ['$300/month personal sales', '4 active recruits', '$10,000 team sales'],
       rewards: ['3% on L4 recruits', 'VIP events', 'Incentive trips'],
       unlocked: currentRank >= 4,
@@ -69,7 +69,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
     },
     {
       rank: 5,
-      label: 'Senior Executive (L5)',
+      label: 'Tier 5',
       requirements: ['$300/month personal sales', '5 active recruits', '$25,000 team sales'],
       rewards: ['2% on L5 recruits', 'Luxury trips', 'Board access'],
       unlocked: currentRank >= 5,
@@ -78,7 +78,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
     },
     {
       rank: 6,
-      label: 'Elite Leader (L6)',
+      label: 'Tier 6 (Elite)',
       requirements: ['$300/month personal sales', '6+ active recruits', '$50,000 team sales'],
       rewards: ['1% on L6 recruits', 'Elite circle', 'Revenue sharing'],
       unlocked: currentRank >= 6,

@@ -13,7 +13,7 @@
 /**
  * User roles within the FameBar OS platform
  */
-export type UserRole = 'buyer' | 'ambassador' | 'leader' | 'admin';
+export type UserRole = 'ambassador' | 'admin';
 
 /**
  * Order payment status lifecycle
@@ -232,31 +232,9 @@ export interface AmbassadorProfile extends User {
 }
 
 /**
- * Profile for retail buyers on the platform
- * Tracks purchase history, referral source, and loyalty rewards
+ * Payment methods supported for manual sales recording
  */
-export interface BuyerProfile extends User {
-  /** Ambassador ID who referred this buyer (if applicable) */
-  referredBy?: string;
-
-  /** Current $FAME token balance */
-  fameBalance: number;
-
-  /** Current Hold-to-Save discount tier (0-20% discount) */
-  holdToSaveTier: 0 | 5 | 10 | 15 | 20;
-
-  /** Total number of orders placed */
-  totalOrders: number;
-
-  /** Whether age has been verified (21+) */
-  ageVerified: boolean;
-
-  /** When age verification was completed (ISO 8601) */
-  ageVerificationDate?: string;
-
-  /** Cumulative lifetime spending ($) */
-  totalSpending: number;
-}
+export type PaymentMethod = 'cash' | 'zelle' | 'venmo';
 
 // ============================================================================
 // ORDER & TRANSACTION TYPES
@@ -311,11 +289,20 @@ export interface Order {
   /** Unique order identifier */
   orderId: string;
 
-  /** Firebase UID of the buyer */
-  buyerId: string;
+  /** Firebase UID of the buyer (optional — sales may be recorded by admin without a buyer account) */
+  buyerId?: string;
 
-  /** Referral code used at purchase (ambassador code that referred buyer) */
+  /** Referral code used at purchase (ambassador code that made the sale) */
   ambassadorCode: string;
+
+  /** Payment method (cash, zelle, venmo) */
+  paymentMethod?: PaymentMethod;
+
+  /** Admin who recorded this sale (if admin-recorded) */
+  recordedBy?: string;
+
+  /** Customer name (for non-platform customers) */
+  customerName?: string;
 
   /** Line items in this order */
   items: OrderItem[];
@@ -398,6 +385,15 @@ export interface CommissionEvent {
 
   /** Amount clawed back if refund occurs */
   clawbackAmount?: number;
+
+  /** Payment reference (Zelle confirmation #, Venmo transaction ID, etc.) */
+  paymentReference?: string;
+
+  /** Payout method used (cash, zelle, venmo) */
+  payoutMethod?: PaymentMethod;
+
+  /** Admin who marked this commission as paid */
+  paidBy?: string;
 }
 
 /**
@@ -524,7 +520,7 @@ export interface NextBestAction {
   /** User receiving the recommendation */
   userId: string;
 
-  /** User's role (ambassador, buyer, etc.) */
+  /** User's role (ambassador or admin) */
   role: UserRole;
 
   /** Type of action (e.g., 'recruit', 'sell', 'verify_kyc', 'reach_milestone') */
@@ -853,13 +849,6 @@ export interface MutationResponse<T> {
  */
 export function isAmbassador(user: User): user is AmbassadorProfile {
   return user.role === 'ambassador';
-}
-
-/**
- * Type guard to check if user is a buyer
- */
-export function isBuyer(user: User): user is BuyerProfile {
-  return user.role === 'buyer';
 }
 
 /**

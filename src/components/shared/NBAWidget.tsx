@@ -92,7 +92,7 @@ export default function NBAWidget({
     );
   }
 
-  const displayTitle = title || getDefaultTitle((user as any).role ?? 'buyer');
+  const displayTitle = title || getDefaultTitle((user as any).role ?? 'ambassador');
 
   return (
     <div className="space-y-4">
@@ -139,9 +139,7 @@ export default function NBAWidget({
  */
 function getDefaultTitle(role: string): string {
   const titles: Record<string, string> = {
-    buyer: 'Unlock Your Rewards',
     ambassador: 'Build Your Business',
-    leader: 'Lead Your Team',
     admin: 'Platform Updates',
   };
   return titles[role] || 'What\'s Next?';
@@ -153,12 +151,6 @@ function getDefaultTitle(role: string): string {
  */
 function handleActionNavigation(action: NextBestAction): void {
   const navigationMap: Record<string, string> = {
-    // Buyer
-    hold_to_save_progress: '/buyer/earn',
-    reorder_ready: '/shop',
-    refer_friend: '/referral',
-    complete_age_verification: '/profile/verify-age',
-
     // Ambassador
     complete_kyc: '/profile/verify-kyc',
     add_telegram: '/profile/telegram',
@@ -167,14 +159,6 @@ function handleActionNavigation(action: NextBestAction): void {
     reach_active_requirement: '/ambassador/sales',
     first_recruit: '/recruit',
     tier_advancement: '/ambassador/tier',
-
-    // Leader
-    reactivate_team: '/leader/team',
-    approve_recruits: '/leader/approvals',
-    monthly_milestone: '/leader/sales',
-    mentor_for_rank: '/leader/mentoring',
-    unlock_depth_commission: '/leader/team',
-    recruitment_challenge: '/leader/challenges',
 
     // Admin
     review_orders: '/admin/orders',

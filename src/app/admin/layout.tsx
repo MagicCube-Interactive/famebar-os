@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   Home,
+  PlusCircle,
   Users,
   ShoppingCart,
   DollarSign,
@@ -21,6 +22,7 @@ import {
 
 const navItems = [
   { label: 'Overview', href: '/admin', icon: Home },
+  { label: 'Record Sale', href: '/admin/record-sale', icon: PlusCircle },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Ambassadors', href: '/admin/ambassadors', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },

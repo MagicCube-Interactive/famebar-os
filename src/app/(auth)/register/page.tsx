@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,12 +9,18 @@ import {
   validatePassword,
   passwordsMatch,
 } from '@/lib/supabase/auth';
-import type { UserRole } from '@/types';
 import { useAuth } from '@/hooks/useAuth';
+import { createClient } from '@/lib/supabase/client';
 
 export default function RegisterPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center"><div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-amber-500 animate-spin"></div></div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="w-12 h-12 rounded-full border-4 border-secondary border-t-primary-container animate-spin" />
+        </div>
+      }
+    >
       <RegisterContent />
     </Suspense>
   );
@@ -25,16 +31,18 @@ function RegisterContent() {
   const searchParams = useSearchParams();
   const { isAuthenticated, loading } = useAuth();
 
+  const refFromUrl = searchParams.get('ref') || '';
+
   // Form state
+  const [referralCode, setReferralCode] = useState(refFromUrl);
+  const [referralValid, setReferralValid] = useState<boolean | null>(null);
+  const [sponsorName, setSponsorName] = useState('');
+  const [isCheckingCode, setIsCheckingCode] = useState(false);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [role, setRole] = useState<UserRole>('buyer');
-  const [referralCode, setReferralCode] = useState(
-    searchParams.get('ref') || ''
-  );
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -45,14 +53,89 @@ function RegisterContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Redirect if already authenticated
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated && !loading) {
-      router.push('/buyer');
+      router.push('/ambassador');
     }
   }, [isAuthenticated, loading, router]);
 
+  // Validate referral code against Supabase
+  const validateReferralCode = useCallback(async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) {
+      setReferralValid(null);
+      setSponsorName('');
+      return;
+    }
+
+    try {
+      setIsCheckingCode(true);
+      const supabase = createClient();
+
+      // Check referral_codes table
+      const { data: codeData, error: codeError } = await supabase
+        .from('referral_codes')
+        .select('code, ambassador_id')
+        .eq('code', trimmed)
+        .eq('is_active', true)
+        .single();
+
+      if (codeError || !codeData) {
+        setReferralValid(false);
+        setSponsorName('');
+        return;
+      }
+
+      setReferralValid(true);
+
+      // Fetch sponsor name from profiles
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', codeData.ambassador_id)
+        .single();
+
+      if (profile) {
+        setSponsorName(`${profile.first_name} ${profile.last_name}`);
+      } else {
+        setSponsorName('');
+      }
+    } catch {
+      setReferralValid(false);
+      setSponsorName('');
+    } finally {
+      setIsCheckingCode(false);
+    }
+  }, []);
+
+  // Auto-validate the code from URL on mount
+  useEffect(() => {
+    if (refFromUrl) {
+      validateReferralCode(refFromUrl);
+    }
+  }, [refFromUrl, validateReferralCode]);
+
+  // Validate code when user finishes typing (debounce on blur)
+  const handleCodeBlur = () => {
+    if (referralCode.trim() && referralCode !== refFromUrl) {
+      validateReferralCode(referralCode);
+    }
+  };
+
   const validateForm = (): string | null => {
-    if (!email || !password || !confirmPassword || !firstName || !lastName) {
+    if (!referralCode.trim()) {
+      return 'A referral code is required to register. Ask your sponsor for an invite code.';
+    }
+
+    if (referralValid === false) {
+      return 'Your referral code is invalid or expired. Please check with your sponsor.';
+    }
+
+    if (referralValid === null) {
+      return 'Please wait for referral code validation to complete.';
+    }
+
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
       return 'All fields are required';
     }
 
@@ -93,70 +176,148 @@ function RegisterContent() {
     try {
       setIsLoading(true);
 
+      // Double-check referral code validity server-side before signup
+      const supabase = createClient();
+      const { data: codeCheck, error: codeCheckError } = await supabase
+        .from('referral_codes')
+        .select('code')
+        .eq('code', referralCode.trim())
+        .eq('is_active', true)
+        .single();
+
+      if (codeCheckError || !codeCheck) {
+        setError('Referral code is no longer valid. Please contact your sponsor.');
+        setIsLoading(false);
+        return;
+      }
+
       await signUpWithEmail({
         email,
         password,
         firstName,
         lastName,
-        role,
-        referralCode: referralCode || undefined,
+        referralCode: referralCode.trim(),
       });
 
-      // Redirect to dashboard after successful registration
-      const dashboardPaths: Record<UserRole, string> = {
-        buyer: '/buyer',
-        ambassador: '/ambassador',
-        leader: '/leader',
-        admin: '/admin',
-      };
-
-      router.push(dashboardPaths[role]);
+      router.push('/ambassador');
     } catch (err: any) {
       setIsLoading(false);
-
       setError(err.message || 'Failed to create account. Please try again.');
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 rounded-full border-4 border-emerald-500 border-t-amber-500 animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="w-12 h-12 rounded-full border-4 border-secondary border-t-primary-container animate-spin mx-auto mb-4" />
+          <p className="text-on-surface-variant">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black px-4 py-12">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12 relative overflow-hidden">
+      {/* Ambient glow */}
+      <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="w-full max-w-lg relative z-10">
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Fame<span className="text-amber-500">Bar</span>
-          </h1>
-          <p className="text-gray-400">Join the Network. Build Your Wealth.</p>
+          <Link href="/">
+            <h1 className="text-4xl font-black mb-2">
+              <span className="text-on-surface">Fame</span>
+              <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
+            </h1>
+          </Link>
+          <p className="text-on-surface-variant text-sm">Become an Ambassador</p>
         </div>
 
         {/* Register Card */}
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-8 shadow-xl">
-          <h2 className="text-2xl font-bold text-white mb-6">Create Your Account</h2>
+        <div className="bg-surface-container rounded-xl p-8 border border-outline-variant/10">
+          <h2 className="text-2xl font-bold text-on-surface mb-6">Create Your Account</h2>
 
           {/* Error Message */}
           {error && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-500/50 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
+            <div className="mb-6 p-4 bg-error-container/20 border border-error/30 rounded-lg">
+              <p className="text-error text-sm">{error}</p>
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Referral Code — TOP of form, required */}
+            <div>
+              <label htmlFor="referralCode" className="block text-sm font-medium text-on-surface-variant mb-2">
+                Invite Code <span className="text-error">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="referralCode"
+                  type="text"
+                  value={referralCode}
+                  onChange={(e) => {
+                    setReferralCode(e.target.value);
+                    setReferralValid(null);
+                    setSponsorName('');
+                  }}
+                  onBlur={handleCodeBlur}
+                  placeholder="Enter your invite code"
+                  disabled={isLoading || !!refFromUrl}
+                  readOnly={!!refFromUrl}
+                  className={`w-full px-4 py-3 bg-surface-container-high border rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:border-transparent disabled:opacity-70 transition font-mono tracking-wider ${
+                    refFromUrl ? 'cursor-not-allowed' : ''
+                  } ${
+                    referralValid === true
+                      ? 'border-secondary/50 focus:ring-secondary'
+                      : referralValid === false
+                      ? 'border-error/50 focus:ring-error'
+                      : 'border-outline-variant/20 focus:ring-primary-container'
+                  }`}
+                />
+                {/* Validation indicator */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {isCheckingCode && (
+                    <div className="w-4 h-4 rounded-full border-2 border-primary-container border-t-transparent animate-spin" />
+                  )}
+                  {!isCheckingCode && referralValid === true && (
+                    <svg className="w-5 h-5 text-secondary" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  )}
+                  {!isCheckingCode && referralValid === false && (
+                    <svg className="w-5 h-5 text-error" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  )}
+                </div>
+              </div>
+
+              {/* Sponsor info */}
+              {referralValid === true && sponsorName && (
+                <p className="mt-2 text-sm text-secondary">
+                  Invited by <span className="font-semibold">{sponsorName}</span>
+                </p>
+              )}
+              {referralValid === false && (
+                <p className="mt-2 text-sm text-error">
+                  Invalid or expired code. Contact your sponsor for a valid invite.
+                </p>
+              )}
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-outline-variant/15" />
+              <span className="text-on-surface-variant/40 text-xs uppercase tracking-widest">Your Info</span>
+              <div className="flex-1 h-px bg-outline-variant/15" />
+            </div>
+
             {/* Name Fields */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="firstName" className="block text-sm font-medium text-on-surface-variant mb-2">
                   First Name
                 </label>
                 <input
@@ -166,11 +327,11 @@ function RegisterContent() {
                   onChange={(e) => setFirstName(e.target.value)}
                   placeholder="John"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-300 mb-2">
+                <label htmlFor="lastName" className="block text-sm font-medium text-on-surface-variant mb-2">
                   Last Name
                 </label>
                 <input
@@ -180,14 +341,14 @@ function RegisterContent() {
                   onChange={(e) => setLastName(e.target.value)}
                   placeholder="Doe"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                 />
               </div>
             </div>
 
             {/* Email Field */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="email" className="block text-sm font-medium text-on-surface-variant mb-2">
                 Email Address
               </label>
               <input
@@ -197,13 +358,13 @@ function RegisterContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
                 disabled={isLoading}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
               />
             </div>
 
             {/* Password Field */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="password" className="block text-sm font-medium text-on-surface-variant mb-2">
                 Password
               </label>
               <div className="relative">
@@ -214,13 +375,13 @@ function RegisterContent() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface disabled:opacity-50"
                 >
                   {showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -234,14 +395,14 @@ function RegisterContent() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-400 mt-2">
+              <p className="text-xs text-on-surface-variant/60 mt-2">
                 At least 8 characters with uppercase, lowercase, and numbers
               </p>
             </div>
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-300 mb-2">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-on-surface-variant mb-2">
                 Confirm Password
               </label>
               <div className="relative">
@@ -252,13 +413,13 @@ function RegisterContent() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={isLoading}
-                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={isLoading}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300 disabled:opacity-50"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface disabled:opacity-50"
                 >
                   {showConfirmPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -274,57 +435,6 @@ function RegisterContent() {
               </div>
             </div>
 
-            {/* Role Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-3">
-                Account Type
-              </label>
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  type="button"
-                  onClick={() => setRole('buyer')}
-                  disabled={isLoading}
-                  className={`p-4 rounded-lg border-2 transition ${
-                    role === 'buyer'
-                      ? 'border-emerald-500 bg-emerald-900/20'
-                      : 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <div className="font-semibold text-white mb-1">Buyer</div>
-                  <div className="text-xs text-gray-400">Shop & earn rewards</div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRole('ambassador')}
-                  disabled={isLoading}
-                  className={`p-4 rounded-lg border-2 transition ${
-                    role === 'ambassador'
-                      ? 'border-emerald-500 bg-emerald-900/20'
-                      : 'border-gray-600 bg-gray-700/50 hover:border-gray-500'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  <div className="font-semibold text-white mb-1">Ambassador</div>
-                  <div className="text-xs text-gray-400">Recruit & earn commissions</div>
-                </button>
-              </div>
-            </div>
-
-            {/* Referral Code */}
-            <div>
-              <label htmlFor="referralCode" className="block text-sm font-medium text-gray-300 mb-2">
-                Referral Code (Optional)
-              </label>
-              <input
-                id="referralCode"
-                type="text"
-                value={referralCode}
-                onChange={(e) => setReferralCode(e.target.value)}
-                placeholder="Enter referral code if you have one"
-                disabled={isLoading}
-                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
-              />
-            </div>
-
             {/* Checkboxes */}
             <div className="space-y-3 py-4">
               <label className="flex items-start gap-3 cursor-pointer">
@@ -333,9 +443,9 @@ function RegisterContent() {
                   checked={ageConfirmed}
                   onChange={(e) => setAgeConfirmed(e.target.checked)}
                   disabled={isLoading}
-                  className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-700 text-emerald-500 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-1 w-4 h-4 rounded border-outline-variant/30 bg-surface-container-high text-primary-container focus:ring-primary-container disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-sm text-on-surface-variant">
                   I confirm that I am 21 years of age or older
                 </span>
               </label>
@@ -346,15 +456,15 @@ function RegisterContent() {
                   checked={termsAccepted}
                   onChange={(e) => setTermsAccepted(e.target.checked)}
                   disabled={isLoading}
-                  className="mt-1 w-4 h-4 rounded border-gray-600 bg-gray-700 text-emerald-500 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="mt-1 w-4 h-4 rounded border-outline-variant/30 bg-surface-container-high text-primary-container focus:ring-primary-container disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                <span className="text-sm text-gray-300">
+                <span className="text-sm text-on-surface-variant">
                   I accept the{' '}
                   <a
                     href="/terms"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-emerald-500 hover:text-emerald-400 transition"
+                    className="text-primary-container hover:text-primary transition"
                   >
                     Terms of Service
                   </a>{' '}
@@ -363,7 +473,7 @@ function RegisterContent() {
                     href="/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-emerald-500 hover:text-emerald-400 transition"
+                    className="text-primary-container hover:text-primary transition"
                   >
                     Privacy Policy
                   </a>
@@ -374,34 +484,34 @@ function RegisterContent() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isLoading}
-              className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              disabled={isLoading || referralValid !== true}
+              className="w-full mt-2 px-4 py-3.5 bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold rounded-lg transition hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-primary-container/20"
             >
               {isLoading ? (
                 <>
-                  <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin"></div>
+                  <div className="w-4 h-4 rounded-full border-2 border-on-primary border-t-transparent animate-spin" />
                   Creating account...
                 </>
               ) : (
-                'Create Account'
+                'Become an Ambassador'
               )}
             </button>
           </form>
 
           {/* Divider */}
           <div className="my-6 flex items-center gap-4">
-            <div className="flex-1 h-px bg-gray-600"></div>
-            <span className="text-gray-500 text-sm">or</span>
-            <div className="flex-1 h-px bg-gray-600"></div>
+            <div className="flex-1 h-px bg-outline-variant/20" />
+            <span className="text-on-surface-variant/50 text-sm">or</span>
+            <div className="flex-1 h-px bg-outline-variant/20" />
           </div>
 
           {/* Sign In Link */}
           <div className="text-center">
-            <p className="text-gray-400 text-sm">
+            <p className="text-on-surface-variant text-sm">
               Already have an account?{' '}
               <Link
                 href="/login"
-                className="text-emerald-500 hover:text-emerald-400 font-medium transition"
+                className="text-primary-container hover:text-primary font-medium transition"
               >
                 Sign in here
               </Link>
@@ -410,8 +520,8 @@ function RegisterContent() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 text-gray-500 text-xs">
-          <p>© 2024 FameBar OS. All rights reserved.</p>
+        <div className="text-center mt-8 text-on-surface-variant/40 text-xs">
+          <p>FameBar OS &middot; Aureum Obsidian</p>
         </div>
       </div>
     </div>
