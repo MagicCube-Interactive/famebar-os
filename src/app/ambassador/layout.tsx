@@ -63,10 +63,10 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
     return items;
   }, [userProfile, isAdmin]);
 
-  if (!isAuthenticated || (!isAmbassadorRole && !isAdmin)) {
+  if (!isAuthenticated || (!isAmbassadorRole && !isAdmin) || !userProfile) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <p className="text-on-surface-variant">Access restricted to ambassadors</p>
+        <p className="text-on-surface-variant">Loading...</p>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
             <Bell className="h-5 w-5" />
           </button>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-on-primary font-bold text-sm">
-            {ambassador.firstName?.[0] || 'A'}
+            {ambassador.full_name?.[0] || ambassador.firstName?.[0] || 'A'}
           </div>
         </div>
       </header>

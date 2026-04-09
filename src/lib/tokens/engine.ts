@@ -173,7 +173,7 @@ export function calculateTokensForOrder(
   const finalTokens = Math.round(tokensEarned * founderMultiplier);
 
   return {
-    eventId: `token_${orderId || 'unknown'}_${ambassadorId}`,
+    eventId: crypto.randomUUID(),
     ambassadorId,
     orderId: orderId || '',
     tokensEarned,

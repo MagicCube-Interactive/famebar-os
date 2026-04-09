@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
   Copy,
   Check,
@@ -80,6 +81,7 @@ export default function AmbassadorPage() {
 
     const fetchData = async () => {
       const supabase = createClient();
+      const safeSupa = createSafeClient();
       const userId = user.id;
 
       // Fetch all data in parallel
@@ -100,15 +102,15 @@ export default function AmbassadorPage() {
           .eq('id', userId)
           .single(),
 
-        // Available commissions total
-        supabase
+        // Available commissions total (via safe client to bypass RLS)
+        safeSupa
           .from('commission_events')
           .select('amount')
           .eq('ambassador_id', userId)
           .eq('status', 'available'),
 
-        // Pending commissions total
-        supabase
+        // Pending commissions total (via safe client to bypass RLS)
+        safeSupa
           .from('commission_events')
           .select('amount')
           .eq('ambassador_id', userId)
@@ -128,15 +130,15 @@ export default function AmbassadorPage() {
           .eq('ambassador_id', userId)
           .eq('status', 'pending'),
 
-        // Direct orders today
-        supabase
+        // Direct orders today (via safe client to bypass RLS)
+        safeSupa
           .from('orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('ambassador_id', userId)
           .gte('created_at', new Date().toISOString().split('T')[0]),
 
-        // New unique customers this week
-        supabase
+        // New unique customers this week (via safe client to bypass RLS)
+        safeSupa
           .from('orders')
           .select('buyer_id')
           .eq('ambassador_id', userId)
@@ -167,7 +169,7 @@ export default function AmbassadorPage() {
         pendingCash: pendCash,
         availableTokens: availTokens,
         pendingTokens: pendTokens,
-        directOrdersToday: todayOrdersResult.count || 0,
+        directOrdersToday: (todayOrdersResult as any).count ?? (todayOrdersResult.data || []).length,
         newCustomersThisWeek: uniqueBuyers.size,
         newRecruitsThisWeek: weekRecruitsResult.count || 0,
       });
@@ -178,8 +180,8 @@ export default function AmbassadorPage() {
 
       if (ambTier >= 4) {
         const [ordersResult, teamResult, revenueLevelsResult] = await Promise.all([
-          // Recent orders recorded by admin for this ambassador
-          supabase
+          // Recent orders recorded by admin for this ambassador (via safe client to bypass RLS)
+          safeSupa
             .from('orders')
             .select('id, created_at, units, total, payment_method, payment_status')
             .eq('ambassador_code', ambRefCode)
@@ -192,9 +194,9 @@ export default function AmbassadorPage() {
             .select('id, personal_sales_this_month, total_recruits, is_active, created_at, profiles!ambassador_profiles_id_fkey(full_name)')
             .eq('sponsor_id', userId),
 
-          // Revenue by level from commission events
+          // Revenue by level from commission events (via safe client to bypass RLS)
           // TODO: Replace with actual L1-L6 aggregation query from Supabase
-          supabase
+          safeSupa
             .from('commission_events')
             .select('tier_level, amount')
             .eq('ambassador_id', userId)

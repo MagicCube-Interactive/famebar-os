@@ -146,20 +146,26 @@ export function onAuthStateChange(
  * @returns User profile or null if not found
  */
 export async function getUserProfile(userId: string) {
-  const supabase = createClient();
+  // Use the server-side /api/me route to bypass RLS policies
+  // (the profiles table has RLS that causes infinite recursion
+  //  when queried from the client with anon key)
+  try {
+    const res = await fetch('/api/me', {
+      method: 'GET',
+      credentials: 'include',
+    });
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+    if (!res.ok) {
+      console.error('getUserProfile: /api/me returned', res.status);
+      return null;
+    }
 
-  if (error) {
-    console.error('Error fetching user profile:', error);
+    const { profile } = await res.json();
+    return profile || null;
+  } catch (err) {
+    console.error('Error fetching user profile:', err);
     return null;
   }
-
-  return data;
 }
 
 /**

@@ -168,7 +168,7 @@ export function calculateCommissionChain(
   // Calculate Tier 0 (Direct) commission for the selling ambassador
   const tier0Amount = calculateDirectCommission(orderTotal);
   events.push({
-    commissionId: `comm_${orderId}_${sellingAmbassadorId}_0`,
+    commissionId: crypto.randomUUID(),
     orderId,
     ambassadorId: sellingAmbassadorId,
     tier: 0,
@@ -207,7 +207,7 @@ export function calculateCommissionChain(
     const tierAmount = calculateTierCommission(orderTotal, currentTier);
 
     events.push({
-      commissionId: `comm_${orderId}_${sponsorId}_${currentTier}`,
+      commissionId: crypto.randomUUID(),
       orderId,
       ambassadorId: sponsorId,
       tier: currentTier,

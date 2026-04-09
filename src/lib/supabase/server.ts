@@ -9,6 +9,7 @@
  */
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 /**
@@ -65,28 +66,9 @@ export function createAdminClient() {
     throw new Error('Missing Supabase admin environment variables');
   }
 
-  return createServerClient(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      get(name: string) {
-        const cookieStore = cookies();
-        return cookieStore.get(name)?.value;
-      },
-      set(name: string, value: string, options: CookieOptions) {
-        try {
-          const cookieStore = cookies();
-          cookieStore.set(name, value, options);
-        } catch (error) {
-          // Ignore errors in Server Components
-        }
-      },
-      remove(name: string, options: CookieOptions) {
-        try {
-          const cookieStore = cookies();
-          cookieStore.delete(name);
-        } catch (error) {
-          // Ignore errors in Server Components
-        }
-      },
-    },
+  // Use the plain supabase-js client with the service role key.
+  // This bypasses RLS completely — only use on the server side.
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 }

@@ -182,7 +182,6 @@ export async function POST(
           commissionAmount: e.amount,
           hasFounderBoost: e.tier === 0 && ambassador.is_founder,
         })),
-        updated_at: new Date().toISOString(),
       })
       .eq('id', orderId);
 

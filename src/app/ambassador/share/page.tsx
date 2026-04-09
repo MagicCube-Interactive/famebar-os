@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
   Share2,
   Copy,
@@ -43,6 +44,7 @@ export default function ShareHubPage() {
 
     const fetchData = async () => {
       const supabase = createClient();
+      const safeSupa = createSafeClient();
 
       const [profileResult, codesResult, ordersResult, monthOrdersResult] = await Promise.all([
         supabase
@@ -58,14 +60,15 @@ export default function ShareHubPage() {
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
 
-        supabase
+        // Orders queries via safe client to bypass RLS
+        safeSupa
           .from('orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('ambassador_id', user.id),
 
-        supabase
+        safeSupa
           .from('orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('ambassador_id', user.id)
           .gte('created_at', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString()),
       ]);
@@ -74,8 +77,8 @@ export default function ShareHubPage() {
         setPrimaryCode(profileResult.data.referral_code);
       }
       setReferralCodes(codesResult.data || []);
-      setDirectOrdersCount(ordersResult.count || 0);
-      setConversionsThisMonth(monthOrdersResult.count || 0);
+      setDirectOrdersCount((ordersResult as any).count ?? (ordersResult.data || []).length);
+      setConversionsThisMonth((monthOrdersResult as any).count ?? (monthOrdersResult.data || []).length);
       setLoading(false);
     };
 

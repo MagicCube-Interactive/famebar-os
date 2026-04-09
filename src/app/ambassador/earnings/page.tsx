@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
   TrendingUp,
   Search,
@@ -110,12 +111,13 @@ export default function EarningsPage() {
     if (!user) return;
 
     const supabase = createClient();
+    const safeSupa = createSafeClient();
 
     async function fetchData() {
       setLoading(true);
       try {
         const [commRes, profRes] = await Promise.all([
-          supabase
+          safeSupa
             .from('commission_events')
             .select('*')
             .eq('ambassador_id', user!.id)

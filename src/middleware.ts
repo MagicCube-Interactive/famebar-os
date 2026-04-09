@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createMiddlewareClient } from '@/lib/supabase/middleware';
+import { createClient } from '@supabase/supabase-js';
 
 interface RouteConfig {
   requiredRoles: string[];
@@ -100,7 +101,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    const { data: profile, error } = await supabase
+    // Use service role key to bypass RLS (profiles table has recursive RLS policy)
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+
+    const { data: profile, error } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)

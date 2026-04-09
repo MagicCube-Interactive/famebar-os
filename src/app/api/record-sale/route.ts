@@ -15,7 +15,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { createServiceClient, createAdminClient } from '@/lib/supabase/server';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -81,10 +81,11 @@ export async function POST(
 
     const supabase = createAdminClient();
 
-    // ---- Get authenticated admin user ----
+    // ---- Get authenticated admin user from session cookie ----
+    const serviceClient = createServiceClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await serviceClient.auth.getUser();
 
     const adminUserId = user?.id || 'system';
 
@@ -109,8 +110,15 @@ export async function POST(
     // ---- Create order ----
     const orderId = crypto.randomUUID();
 
+    // The orders table schema: id, buyer_id, ambassador_code, ambassador_id,
+    // items, subtotal, discount, total, payment_status, settlement_status,
+    // referral_chain, age_verified, created_at, settled_at, refunded_at
+    // Note: buyer_id is NOT NULL, so we use the ambassador's own ID
+    // for admin-recorded sales (no separate buyer in 2-role system).
+    // Extra info (customer_name, paymentMethod, notes) stored in items JSON.
     const { error: orderError } = await supabase.from('orders').insert({
       id: orderId,
+      buyer_id: ambassadorId,
       ambassador_code: ambassadorCode.toUpperCase(),
       ambassador_id: ambassadorId,
       total,
@@ -118,10 +126,6 @@ export async function POST(
       discount: 0,
       payment_status: 'paid',
       settlement_status: 'pending',
-      payment_method: paymentMethod,
-      recorded_by: adminUserId,
-      customer_name: customerName || null,
-      notes: notes || null,
       items: [
         {
           productId: 'FAME-001',
@@ -129,11 +133,13 @@ export async function POST(
           quantity: units,
           unitPrice,
           lineTotal: total,
+          customerName: customerName || null,
+          paymentMethod,
+          recordedBy: adminUserId,
+          notes: notes || null,
         },
       ],
       age_verified: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     });
 
     if (orderError) {

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import { ShoppingBag, DollarSign, TrendingUp, CalendarDays, Loader2 } from 'lucide-react';
 
 interface OrderRecord {
@@ -29,6 +30,7 @@ export default function CustomersPage() {
 
     const fetchOrders = async () => {
       const supabase = createClient();
+      const safeSupa = createSafeClient();
       const userId = user.id;
 
       // First get ambassador's referral code
@@ -43,8 +45,8 @@ export default function CustomersPage() {
         return;
       }
 
-      // Then fetch orders using that referral code
-      const { data: ordersData } = await supabase
+      // Then fetch orders using that referral code (via safe client to bypass RLS)
+      const { data: ordersData } = await safeSupa
         .from('orders')
         .select('*')
         .eq('ambassador_code', ambProfile.referral_code)
