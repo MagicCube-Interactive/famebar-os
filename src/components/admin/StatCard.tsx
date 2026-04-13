@@ -9,7 +9,7 @@ interface StatCardProps {
   value: string | number;
   trend?: number;
   trendLabel?: string;
-  color?: 'emerald' | 'blue' | 'purple' | 'orange' | 'amber';
+  color?: 'emerald' | 'blue' | 'purple' | 'orange' | 'fuchsia';
   trendNegative?: boolean;
 }
 
@@ -51,11 +51,11 @@ export default function StatCard({
       icon: 'text-orange-400',
       value: 'text-orange-400',
     },
-    amber: {
-      border: 'border-amber-500/30',
-      bg: 'bg-amber-900/10',
-      icon: 'text-amber-400',
-      value: 'text-amber-400',
+    fuchsia: {
+      border: 'border-fuchsia-500/30',
+      bg: 'bg-fuchsia-900/10',
+      icon: 'text-fuchsia-400',
+      value: 'text-fuchsia-400',
     },
   };
 

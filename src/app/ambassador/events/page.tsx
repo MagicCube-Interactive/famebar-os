@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { isAmbassador } from '@/types';
+import { canViewAmbassadorPages } from '@/types';
 import { Calendar, MapPin, Users, Zap, Clock } from 'lucide-react';
 
 export default function EventsPage() {
   const { userProfile } = useAuthContext();
 
-  if (!userProfile || !isAmbassador(userProfile)) {
+  if (!userProfile || !canViewAmbassadorPages(userProfile)) {
     return null;
   }
 
@@ -46,7 +46,7 @@ export default function EventsPage() {
       date: '2024-05-18',
       time: '9:00 AM EDT',
       location: 'Miami, FL',
-      host: 'FameBar Team',
+      host: 'FameClub Team',
       description: 'Network with top ambassadors and learn advanced strategies',
       rsvpd: true,
       attendees: 150,
@@ -72,13 +72,13 @@ export default function EventsPage() {
             {events.filter(e => e.rsvpd).length}
           </p>
         </div>
-        <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-4">
+        <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-4">
           <p className="text-xs text-gray-500">Past Events</p>
-          <p className="mt-2 text-2xl font-bold text-blue-400">{pastEventCount}</p>
+          <p className="mt-2 text-2xl font-bold text-cyan-400">{pastEventCount}</p>
         </div>
-        <div className="rounded-lg border border-yellow-500/30 bg-yellow-950/20 p-4">
+        <div className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-950/20 p-4">
           <p className="text-xs text-gray-500">Event Earnings</p>
-          <p className="mt-2 text-2xl font-bold text-yellow-400">
+          <p className="mt-2 text-2xl font-bold text-fuchsia-400">
             ${earnedFromEvents.toLocaleString()}
           </p>
         </div>
@@ -100,7 +100,7 @@ export default function EventsPage() {
               <div className="mb-4 flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                 <div className="flex-1">
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="inline-flex rounded-full bg-amber-500/20 px-3 py-1 text-xs font-semibold text-amber-300">
+                    <span className="inline-flex rounded-full bg-fuchsia-500/20 px-3 py-1 text-xs font-semibold text-fuchsia-300">
                       {event.type}
                     </span>
                     {event.rsvpd && (
@@ -143,7 +143,7 @@ export default function EventsPage() {
                   className={`whitespace-nowrap rounded-lg px-6 py-2.5 font-semibold transition-all duration-200 ${
                     event.rsvpd
                       ? 'border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                      : 'bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-600 hover:to-yellow-500'
+                      : 'bg-gradient-to-r from-fuchsia-500 to-purple-400 text-gray-900 hover:from-fuchsia-600 hover:to-purple-500'
                   }`}
                 >
                   {event.rsvpd ? '✓ RSVP\'d' : 'RSVP Now'}
@@ -188,7 +188,7 @@ export default function EventsPage() {
           <div>
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="text-gray-400">Average per Event</span>
-              <span className="font-bold text-amber-400">
+              <span className="font-bold text-fuchsia-400">
                 ${(earnedFromEvents / pastEventCount).toFixed(2)}
               </span>
             </div>

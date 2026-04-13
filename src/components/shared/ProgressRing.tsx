@@ -10,7 +10,7 @@ interface ProgressRingProps {
   /** Stroke width in pixels */
   strokeWidth?: number;
   /** Ring color (Tailwind or hex) */
-  color?: 'emerald' | 'amber' | 'green' | 'blue' | 'purple' | string;
+  color?: 'emerald' | 'fuchsia' | 'green' | 'blue' | 'purple' | string;
   /** Main label text */
   label?: string;
   /** Sublabel text (smaller, secondary) */
@@ -48,7 +48,7 @@ export default function ProgressRing({
   // Color map
   const colorMap: Record<string, { gradient: string; text: string }> = {
     emerald: { gradient: 'from-emerald-400 to-green-500', text: 'text-emerald-400' },
-    amber: { gradient: 'from-amber-400 to-yellow-400', text: 'text-amber-400' },
+    fuchsia: { gradient: 'from-fuchsia-400 to-purple-400', text: 'text-fuchsia-400' },
     green: { gradient: 'from-green-400 to-emerald-500', text: 'text-green-400' },
     blue: { gradient: 'from-blue-400 to-cyan-500', text: 'text-blue-400' },
     purple: { gradient: 'from-purple-400 to-pink-500', text: 'text-purple-400' },
@@ -159,7 +159,7 @@ export default function ProgressRing({
 function getGradientStartColor(color: string): string {
   const colorMap: Record<string, string> = {
     emerald: '#10b981',
-    amber: '#f59e0b',
+    fuchsia: '#d946ef',
     green: '#22c55e',
     blue: '#60a5fa',
     purple: '#a855f7',
@@ -173,7 +173,7 @@ function getGradientStartColor(color: string): string {
 function getGradientEndColor(color: string): string {
   const colorMap: Record<string, string> = {
     emerald: '#34d399',
-    amber: '#fbbf24',
+    fuchsia: '#e879f9',
     green: '#84cc16',
     blue: '#06b6d4',
     purple: '#ec4899',
@@ -199,7 +199,7 @@ export function ProgressRingDemo() {
         </div>
 
         <div className="flex flex-col items-center gap-4">
-          <ProgressRing progress={45} color="amber" label="Tier Progress" />
+          <ProgressRing progress={45} color="fuchsia" label="Tier Progress" />
           <p className="text-xs text-gray-400">Hold-to-Save</p>
         </div>
 

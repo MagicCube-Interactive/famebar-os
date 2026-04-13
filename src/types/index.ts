@@ -1,5 +1,5 @@
 /**
- * FameBar OS Direct-Selling Platform - Complete Type Definitions
+ * FameClub Direct-Selling Platform - Complete Type Definitions
  *
  * This file defines all data models for the 7-tier affiliate/MLM platform with
  * comprehensive business rules including community payouts, token rewards,
@@ -11,7 +11,7 @@
 // ============================================================================
 
 /**
- * User roles within the FameBar OS platform
+ * User roles within the FameClub platform
  */
 export type UserRole = 'ambassador' | 'admin';
 
@@ -53,7 +53,7 @@ export type CampaignStatus = 'draft' | 'active' | 'paused' | 'completed' | 'arch
 /**
  * Message channel types
  */
-export type MessageChannel = 'telegram' | 'email' | 'sms' | 'push';
+export type MessageChannel = 'telegram' | 'signal' | 'email' | 'sms' | 'push';
 
 /**
  * Event types
@@ -157,6 +157,9 @@ export interface User {
 
   /** Telegram username for communications (without @) */
   telegramHandle?: string;
+
+  /** Signal username or phone number for communications */
+  signalHandle?: string;
 
   /** Profile picture URL */
   profileImageUrl?: string;
@@ -849,6 +852,13 @@ export interface MutationResponse<T> {
  */
 export function isAmbassador(user: User): user is AmbassadorProfile {
   return user.role === 'ambassador';
+}
+
+/**
+ * Check if a user can view ambassador pages (ambassadors + admins)
+ */
+export function canViewAmbassadorPages(user: User): boolean {
+  return user.role === 'ambassador' || user.role === 'admin';
 }
 
 /**

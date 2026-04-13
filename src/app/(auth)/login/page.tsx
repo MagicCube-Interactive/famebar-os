@@ -210,7 +210,7 @@ function LoginContent() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-on-surface-variant/40 text-xs">
-          <p>FameBar OS &middot; Aureum Obsidian</p>
+          <p>FameClub &middot; Aureum Obsidian</p>
         </div>
       </div>
     </div>

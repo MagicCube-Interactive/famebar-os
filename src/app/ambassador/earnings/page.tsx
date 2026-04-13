@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
   TrendingUp,
@@ -74,21 +73,21 @@ function tierLabel(level: number): string {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-500/20 text-amber-300',
+  pending: 'bg-fuchsia-500/20 text-fuchsia-300',
   available: 'bg-primary-container/30 text-primary-fixed-dim',
   paid: 'bg-secondary/20 text-secondary',
   clawedback: 'bg-error/20 text-error',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  pending: 'bg-amber-400',
+  pending: 'bg-fuchsia-400',
   available: 'bg-primary-fixed-dim',
   paid: 'bg-secondary',
   clawedback: 'bg-error',
 };
 
 const AMOUNT_COLOR: Record<string, string> = {
-  pending: 'text-amber-300',
+  pending: 'text-fuchsia-300',
   available: 'text-primary-fixed-dim',
   paid: 'text-secondary',
   clawedback: 'text-error line-through',
@@ -110,7 +109,6 @@ export default function EarningsPage() {
   useEffect(() => {
     if (!user) return;
 
-    const supabase = createClient();
     const safeSupa = createSafeClient();
 
     async function fetchData() {
@@ -122,7 +120,7 @@ export default function EarningsPage() {
             .select('*')
             .eq('ambassador_id', user!.id)
             .order('created_at', { ascending: false }),
-          supabase
+          safeSupa
             .from('ambassador_profiles')
             .select('id, tier, personal_sales_this_month, total_sales, is_founder')
             .eq('id', user!.id)

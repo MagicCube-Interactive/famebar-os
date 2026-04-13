@@ -50,9 +50,13 @@ export async function GET() {
       );
     }
 
-    // Merge profile with ambassador data
+    // Merge profile with ambassador data + auth metadata fallback for telegram/signal
+    const authMeta = user.user_metadata || {};
     const profile = {
       ...profileResult.data,
+      // Ensure telegram/signal are always present (DB column or auth metadata fallback)
+      telegram_handle: profileResult.data.telegram_handle || authMeta.telegram_handle || null,
+      signal_handle: profileResult.data.signal_handle || authMeta.signal_handle || null,
       // Ambassador-specific fields (camelCase for client use)
       ...(ambassadorResult.data
         ? {

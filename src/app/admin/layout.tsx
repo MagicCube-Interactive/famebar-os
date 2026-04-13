@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-14 px-6 bg-surface-container-low">
         <div className="flex items-center gap-4">
-          <span className="text-lg font-bold tracking-tight text-on-surface">FameBar OS</span>
+          <span className="text-lg font-bold tracking-tight text-on-surface">FameClub</span>
           <div className="hidden md:flex gap-6 ml-8">
             <Link href="/admin" className={`text-sm font-semibold ${pathname === '/admin' ? 'text-primary-container' : 'text-on-surface hover:bg-surface-container p-1 rounded transition-colors'}`}>Dashboard</Link>
             <Link href="/admin/analytics" className={`text-sm font-semibold ${pathname === '/admin/analytics' ? 'text-primary-container' : 'text-on-surface hover:bg-surface-container p-1 rounded transition-colors'}`}>Analytics</Link>
@@ -73,7 +73,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Sidebar - Desktop */}
       <aside className="fixed left-0 top-0 h-full flex-col pt-16 pb-6 bg-gray-900 w-[240px] z-40 hidden md:flex shadow-2xl shadow-black/40">
         <div className="px-6 mb-8">
-          <h2 className="text-xl font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">FameBar OS</h2>
+          <h2 className="text-xl font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">FameClub</h2>
           <p className="text-[10px] uppercase tracking-widest text-gray-500 font-bold">Enterprise Portal</p>
         </div>
         <nav className="flex-1 space-y-1 overflow-y-auto">

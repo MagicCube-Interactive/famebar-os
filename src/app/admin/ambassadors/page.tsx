@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import DataTable, { Column } from '@/components/admin/DataTable';
 import {
   X,
@@ -104,24 +104,31 @@ function AmbassadorModal({
     setError(null);
     setSuccess(false);
 
-    const supabase = createClient();
-    const { error: updateError } = await supabase
-      .from('ambassador_profiles')
-      .update({
-        tier,
-        rank,
-        is_active: isActive,
-        kyc_verified: kycVerified,
-        is_founder: isFounder,
-        ...(isFounder && !ambassador.is_founder ? { founder_start_date: new Date().toISOString() } : {}),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', ambassador.id);
+    const res = await fetch('/api/admin/mutate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        table: 'ambassador_profiles',
+        action: 'update',
+        match: { column: 'id', value: ambassador.id },
+        fields: {
+          tier,
+          rank,
+          is_active: isActive,
+          kyc_verified: kycVerified,
+          is_founder: isFounder,
+          ...(isFounder && !ambassador.is_founder ? { founder_start_date: new Date().toISOString() } : {}),
+          updated_at: new Date().toISOString(),
+        },
+      }),
+    });
+    const result = await res.json().catch(() => ({ error: 'Invalid response' }));
 
     setSaving(false);
 
-    if (updateError) {
-      setError(updateError.message);
+    if (!res.ok || !result.success) {
+      setError(result.error || 'Failed to save');
       return;
     }
 
@@ -406,8 +413,8 @@ export default function AmbassadorsPage() {
   /* ---------------------------------------------------------------- */
 
   const fetchAmbassadors = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
+    const safe = createSafeClient();
+    const { data } = await safe
       .from('ambassador_profiles')
       .select(
         'id, referral_code, tier, rank, is_active, total_recruits, total_sales, personal_sales_this_month, kyc_verified, is_founder, created_at, profiles!ambassador_profiles_id_fkey(full_name, email)'
@@ -445,15 +452,22 @@ export default function AmbassadorsPage() {
 
   const toggleActive = async (amb: Ambassador) => {
     setTogglingId(amb.id);
-    const supabase = createClient();
     const newValue = !amb.is_active;
 
-    const { error } = await supabase
-      .from('ambassador_profiles')
-      .update({ is_active: newValue, updated_at: new Date().toISOString() })
-      .eq('id', amb.id);
+    const res = await fetch('/api/admin/mutate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        table: 'ambassador_profiles',
+        action: 'update',
+        match: { column: 'id', value: amb.id },
+        fields: { is_active: newValue, updated_at: new Date().toISOString() },
+      }),
+    });
+    const result = await res.json().catch(() => ({}));
 
-    if (!error) {
+    if (res.ok && result.success) {
       setAmbassadors((prev) =>
         prev.map((a) => (a.id === amb.id ? { ...a, is_active: newValue } : a))
       );
@@ -467,15 +481,22 @@ export default function AmbassadorsPage() {
 
   const bulkApproveKyc = async () => {
     setBulkLoading(true);
-    const supabase = createClient();
     const ids = Array.from(selectedIds);
 
-    const { error } = await supabase
-      .from('ambassador_profiles')
-      .update({ kyc_verified: true, updated_at: new Date().toISOString() })
-      .in('id', ids);
+    const res = await fetch('/api/admin/mutate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        table: 'ambassador_profiles',
+        action: 'update',
+        matchIn: { column: 'id', values: ids },
+        fields: { kyc_verified: true, updated_at: new Date().toISOString() },
+      }),
+    });
+    const result = await res.json().catch(() => ({}));
 
-    if (!error) {
+    if (res.ok && result.success) {
       setAmbassadors((prev) =>
         prev.map((a) => (selectedIds.has(a.id) ? { ...a, kyc_verified: true } : a))
       );
@@ -660,7 +681,7 @@ export default function AmbassadorsPage() {
             Verified
           </span>
         ) : (
-          <span className="flex items-center gap-1 text-yellow-500 text-xs font-semibold">
+          <span className="flex items-center gap-1 text-fuchsia-500 text-xs font-semibold">
             <Clock className="h-3.5 w-3.5" />
             Pending
           </span>

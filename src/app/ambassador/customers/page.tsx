@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { createSafeClient } from '@/lib/supabase/safe-client';
 import { ShoppingBag, DollarSign, TrendingUp, CalendarDays, Loader2 } from 'lucide-react';
 
@@ -26,15 +25,14 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || role !== 'ambassador') return;
+    if (!user || role !== 'ambassador' && role !== 'admin') return;
 
     const fetchOrders = async () => {
-      const supabase = createClient();
       const safeSupa = createSafeClient();
       const userId = user.id;
 
-      // First get ambassador's referral code
-      const { data: ambProfile } = await supabase
+      // First get ambassador's referral code (via safe client to bypass RLS)
+      const { data: ambProfile } = await safeSupa
         .from('ambassador_profiles')
         .select('referral_code')
         .eq('id', userId)
@@ -62,7 +60,7 @@ export default function CustomersPage() {
     fetchOrders();
   }, [user, role]);
 
-  if (!user || role !== 'ambassador') {
+  if (!user || role !== 'ambassador' && role !== 'admin') {
     return null;
   }
 
@@ -112,7 +110,7 @@ export default function CustomersPage() {
       case 'completed':
         return 'bg-green-500/20 text-green-400';
       case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400';
+        return 'bg-fuchsia-500/20 text-fuchsia-400';
       case 'failed':
         return 'bg-red-500/20 text-red-400';
       case 'cancelled':

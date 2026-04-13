@@ -97,7 +97,7 @@ export default function FraudPage() {
   ];
 
   const auditLogs = [
-    { action: 'Flagged as suspicious', by: 'admin@famebar.com', time: '2 hours ago', timeCode: '14:22:05' },
+    { action: 'Flagged as suspicious', by: 'admin@fameclub.shop', time: '2 hours ago', timeCode: '14:22:05' },
     { action: 'Manual review initiated', by: 'Sarah (compliance)', time: '3 hours ago', timeCode: '14:18:12' },
     { action: 'Pattern detected: device_id match', by: 'System', time: '4 hours ago', timeCode: '13:55:44' },
   ];

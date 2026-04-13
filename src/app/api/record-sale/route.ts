@@ -129,7 +129,7 @@ export async function POST(
       items: [
         {
           productId: 'FAME-001',
-          productName: 'FameBar',
+          productName: 'FameClub',
           quantity: units,
           unitPrice,
           lineTotal: total,

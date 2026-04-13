@@ -53,7 +53,7 @@ export default function MissionChecklist({
       {/* Celebration Overlay */}
       {showCelebration && (
         <div className="absolute inset-0 z-50 flex items-center justify-center">
-          <div className="animate-bounce rounded-full bg-gradient-to-br from-amber-400 to-yellow-500 px-8 py-6 text-center shadow-2xl">
+          <div className="animate-bounce rounded-full bg-gradient-to-br from-fuchsia-400 to-purple-500 px-8 py-6 text-center shadow-2xl">
             <p className="text-2xl font-bold text-gray-900">All Missions Complete!</p>
             <p className="mt-2 text-sm font-semibold text-gray-800">Great job ambassador!</p>
           </div>
@@ -64,10 +64,10 @@ export default function MissionChecklist({
       <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-100">
-            <Target className="h-5 w-5 text-amber-400" />
+            <Target className="h-5 w-5 text-fuchsia-400" />
             Starter Missions
           </h3>
-          <div className="text-xs font-semibold text-amber-300">
+          <div className="text-xs font-semibold text-fuchsia-300">
             {completedCount}/{totalCount}
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function MissionChecklist({
         <div className="space-y-2">
           <div className="h-2 overflow-hidden rounded-full bg-gray-700/50">
             <div
-              className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-fuchsia-400 to-purple-300 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -153,9 +153,9 @@ export default function MissionChecklist({
 
       {/* Reward Preview */}
       {completedCount > 0 && completedCount < totalCount && (
-        <div className="rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 p-4">
+        <div className="rounded-lg border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-900/20 to-purple-900/20 p-4">
           <p className="text-xs text-gray-400">
-            <span className="font-semibold text-amber-300">Unlock bonus:</span> Complete all
+            <span className="font-semibold text-fuchsia-300">Unlock bonus:</span> Complete all
             missions to earn your Founder Badge and exclusive rewards!
           </p>
         </div>

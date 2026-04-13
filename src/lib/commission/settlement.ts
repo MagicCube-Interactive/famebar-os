@@ -1,5 +1,5 @@
 /**
- * FameBar OS Commission Settlement & Clawback Engine
+ * FameClub Commission Settlement & Clawback Engine
  *
  * Manages the settlement lifecycle of commissions and tokens:
  * - Orders enter "pending" status and stay there for 14 days

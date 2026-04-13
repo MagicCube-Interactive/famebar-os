@@ -90,25 +90,25 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
   return (
     <div className="space-y-4">
       {/* Progress Summary */}
-      <div className="rounded-lg border border-amber-500/30 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 p-4">
+      <div className="rounded-lg border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-900/20 to-purple-900/20 p-4">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-400">Current Rank</p>
-            <p className="text-xl font-bold text-amber-300 mt-1">
+            <p className="text-xl font-bold text-fuchsia-300 mt-1">
               {milestones[currentRank]?.label || 'Unknown'}
             </p>
           </div>
           {currentRank < 6 && (
             <div className="text-right">
               <p className="text-sm text-gray-400">To Next Rank</p>
-              <p className="text-sm font-semibold text-amber-300 mt-1">
+              <p className="text-sm font-semibold text-fuchsia-300 mt-1">
                 {milestones[currentRank + 1]?.label}
               </p>
             </div>
           )}
           {currentRank === 6 && (
             <div className="text-right">
-              <p className="text-lg font-bold text-amber-300">Elite Tier Achieved!</p>
+              <p className="text-lg font-bold text-fuchsia-300">Elite Tier Achieved!</p>
             </div>
           )}
         </div>
@@ -127,7 +127,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
             <div
               className={`rounded-lg border p-4 transition-all ${
                 milestone.current
-                  ? 'border-amber-500/50 bg-gradient-to-r from-amber-900/40 to-yellow-900/30 shadow-lg shadow-amber-500/20'
+                  ? 'border-fuchsia-500/50 bg-gradient-to-r from-fuchsia-900/40 to-purple-900/30 shadow-lg shadow-fuchsia-500/20'
                   : milestone.unlocked
                   ? 'border-emerald-500/30 bg-emerald-900/10'
                   : 'border-gray-700/30 bg-gray-800/10 opacity-60'
@@ -138,7 +138,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
                 <div
                   className={`flex-shrink-0 h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg ${
                     milestone.current
-                      ? 'bg-gradient-to-br from-amber-400 to-yellow-400 text-gray-900'
+                      ? 'bg-gradient-to-br from-fuchsia-400 to-purple-400 text-gray-900'
                       : milestone.unlocked
                       ? 'bg-emerald-500 text-white'
                       : 'bg-gray-700 text-gray-400'
@@ -160,12 +160,12 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
                   <div className="flex items-center gap-2 mb-2">
                     <h4 className="text-lg font-bold text-gray-100">{milestone.label}</h4>
                     {milestone.current && (
-                      <span className="inline-block rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-gray-900">
+                      <span className="inline-block rounded-full bg-fuchsia-500 px-2 py-0.5 text-xs font-bold text-gray-900">
                         CURRENT
                       </span>
                     )}
                     {milestone.nextMilestone && (
-                      <span className="inline-block rounded-full border border-amber-500/50 bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-amber-300">
+                      <span className="inline-block rounded-full border border-fuchsia-500/50 bg-fuchsia-500/10 px-2 py-0.5 text-xs font-bold text-fuchsia-300">
                         NEXT
                       </span>
                     )}
@@ -193,7 +193,7 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
                     <p className="text-xs font-semibold text-gray-400 mb-1">Rewards:</p>
                     <ul className="space-y-1">
                       {milestone.rewards.map((reward, i) => (
-                        <li key={i} className="text-xs text-amber-300 flex items-center gap-1.5">
+                        <li key={i} className="text-xs text-fuchsia-300 flex items-center gap-1.5">
                           <Zap className="h-3 w-3 flex-shrink-0" />
                           {reward}
                         </li>
@@ -214,11 +214,11 @@ export default function MilestoneLadder({ currentRank }: MilestoneLadderProps) {
           <p className="text-xs text-gray-400 mt-1">Tiers Unlocked</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-blue-400">{currentRank === 6 ? '∞' : 7 - currentRank}</p>
+          <p className="text-2xl font-bold text-cyan-400">{currentRank === 6 ? '∞' : 7 - currentRank}</p>
           <p className="text-xs text-gray-400 mt-1">Tiers Remaining</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-amber-400">{currentRank * 14 + 25}%</p>
+          <p className="text-2xl font-bold text-fuchsia-400">{currentRank * 14 + 25}%</p>
           <p className="text-xs text-gray-400 mt-1">Max Commission</p>
         </div>
       </div>

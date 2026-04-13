@@ -1,7 +1,7 @@
 {
-  "name": "famebar-os",
+  "name": "fameclub",
   "version": "1.0.0",
-  "description": "FameBar OS - Direct-selling platform with Firebase backend",
+  "description": "FameClub - Direct-selling platform with Supabase backend",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -29,6 +29,7 @@
     "autoprefixer": "^10.0.0",
     "eslint": "^8.0.0",
     "eslint-config-next": "^14.0.0",
+    "pg": "^8.20.0",
     "postcss": "^8.0.0",
     "tailwindcss": "^3.0.0",
     "typescript": "^5.0.0"

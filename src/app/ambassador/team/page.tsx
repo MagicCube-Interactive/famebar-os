@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import { Users, TrendingUp, UserPlus, Copy, Check, Loader2 } from 'lucide-react';
 
 interface Recruit {
@@ -30,22 +30,22 @@ export default function TeamPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!user || role !== 'ambassador') return;
+    if (!user || role !== 'ambassador' && role !== 'admin') return;
 
     const fetchTeamData = async () => {
-      const supabase = createClient();
+      const safeSupa = createSafeClient();
       const userId = user.id;
 
       const [recruitsResult, profileResult] = await Promise.all([
         // Direct recruits: ambassador_profiles where sponsor_id = current user
-        supabase
+        safeSupa
           .from('ambassador_profiles')
           .select('*, profiles!inner(full_name, email, avatar_url, created_at)')
           .eq('sponsor_id', userId)
           .order('created_at', { ascending: false }),
 
         // Get current ambassador's referral code
-        supabase
+        safeSupa
           .from('ambassador_profiles')
           .select('referral_code')
           .eq('id', userId)
@@ -72,7 +72,7 @@ export default function TeamPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (!user || role !== 'ambassador') {
+  if (!user || role !== 'ambassador' && role !== 'admin') {
     return null;
   }
 

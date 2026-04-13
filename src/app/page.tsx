@@ -55,9 +55,9 @@ export default function Home() {
       {/* ================================================================ */}
       <section className="relative z-10 flex flex-col items-center justify-center px-6 pt-20 pb-16 md:pt-28 md:pb-20">
         {/* Logo */}
-        <h1 className="text-6xl md:text-7xl font-black mb-4 tracking-tight">
+        <h1 className="text-6xl md:text-7xl font-display font-black mb-4 tracking-tight">
           <span className="text-on-surface">Fame</span>
-          <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
+          <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Club</span>
         </h1>
         <p className="text-on-surface-variant text-lg md:text-xl text-center max-w-xl mb-6">
           Share a $25 premium product. Keep 50% in community commissions. Earn $FAME tokens on every sale.
@@ -387,10 +387,9 @@ export default function Home() {
       {/* ================================================================ */}
       <footer className="relative z-10 px-6 py-8 border-t border-outline-variant/10">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <span className="text-sm font-black text-on-surface">Fame</span>
-            <span className="text-sm font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
-            <span className="text-on-surface-variant/40 text-xs ml-1">OS</span>
+            <span className="text-sm font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Club</span>
           </div>
           <p className="text-on-surface-variant/50 text-xs">
             Already a member?{' '}

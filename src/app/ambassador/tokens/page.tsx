@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import { Shield, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // ---------- types ----------
@@ -46,14 +46,14 @@ function fmtDate(iso: string): string {
 }
 
 const STATUS_STYLE: Record<string, string> = {
-  pending: 'bg-amber-500/20 text-amber-300',
+  pending: 'bg-fuchsia-500/20 text-fuchsia-300',
   available: 'bg-primary-container/30 text-primary-fixed-dim',
   spent: 'bg-tertiary-container/30 text-tertiary',
   clawedback: 'bg-error/20 text-error',
 };
 
 const STATUS_DOT: Record<string, string> = {
-  pending: 'bg-amber-400',
+  pending: 'bg-fuchsia-400',
   available: 'bg-primary-fixed-dim',
   spent: 'bg-tertiary',
   clawedback: 'bg-error',
@@ -73,18 +73,18 @@ export default function TokenVaultPage() {
   useEffect(() => {
     if (!user) return;
 
-    const supabase = createClient();
+    const safeSupa = createSafeClient();
 
     async function fetchData() {
       setLoading(true);
       try {
         const [tokRes, profRes] = await Promise.all([
-          supabase
+          safeSupa
             .from('token_events')
             .select('*')
             .eq('ambassador_id', user!.id)
             .order('created_at', { ascending: false }),
-          supabase
+          safeSupa
             .from('ambassador_profiles')
             .select('id, is_founder, founder_start_date')
             .eq('id', user!.id)
@@ -180,7 +180,7 @@ export default function TokenVaultPage() {
       {/* ========== Stats Row ========== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Pending', value: fmtTokens(pendingBalance), color: 'text-amber-300' },
+          { label: 'Pending', value: fmtTokens(pendingBalance), color: 'text-fuchsia-300' },
           { label: 'Available', value: fmtTokens(availableBalance), color: 'text-primary-fixed-dim' },
           { label: 'Total Earned', value: fmtTokens(totalEarned), color: 'text-secondary' },
           {

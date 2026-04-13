@@ -41,7 +41,7 @@ export default function NextBestActionCard({
       className={`relative overflow-hidden rounded-lg border transition-all duration-300 hover:shadow-lg ${bgColor} ${borderColor}`}
     >
       {/* Gradient accent line */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-transparent" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-fuchsia-400 via-purple-300 to-transparent" />
 
       <div className="p-5">
         {/* Header: Icon + Priority Badge */}
@@ -103,7 +103,7 @@ export default function NextBestActionCard({
           disabled={isLoading}
           className={`w-full rounded-lg py-2.5 px-3 font-medium text-sm transition-all duration-200 ${
             action.priority <= 2
-              ? 'bg-gradient-to-r from-amber-500 to-yellow-400 text-gray-900 hover:from-amber-600 hover:to-yellow-500 disabled:opacity-50'
+              ? 'bg-gradient-to-r from-fuchsia-500 to-purple-400 text-gray-900 hover:from-fuchsia-600 hover:to-purple-500 disabled:opacity-50'
               : 'bg-gray-700 text-gray-100 hover:bg-gray-600 disabled:opacity-50'
           }`}
         >

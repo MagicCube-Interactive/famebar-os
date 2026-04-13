@@ -90,7 +90,7 @@ export default function EarningsCard({
             {pendingCash > 0 && (
               <div className="text-sm">
                 <span className="text-gray-400">+</span>
-                <span className="ml-1 font-medium text-amber-300">
+                <span className="ml-1 font-medium text-fuchsia-300">
                   ${pendingCash.toFixed(2)} pending
                 </span>
               </div>
@@ -107,7 +107,7 @@ export default function EarningsCard({
           <div className="rounded-lg bg-gray-700/20 p-3">
             <p className="mb-1 text-xs font-medium text-gray-500">Available $FAME</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-yellow-400">
+              <span className="text-2xl font-bold text-fuchsia-400">
                 {availableTokens.toLocaleString()}
               </span>
               <span className="text-xs text-gray-500">tokens</span>
@@ -118,7 +118,7 @@ export default function EarningsCard({
           <div className="rounded-lg bg-gray-700/20 p-3">
             <p className="mb-1 text-xs font-medium text-gray-500">Pending $FAME</p>
             <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold text-amber-300">
+              <span className="text-2xl font-bold text-fuchsia-300">
                 {pendingTokens.toLocaleString()}
               </span>
               <span className="text-xs text-gray-500">tokens</span>
@@ -131,13 +131,13 @@ export default function EarningsCard({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium text-gray-500">Hold-to-Save Tier</p>
-              <p className="text-xs font-semibold text-amber-300">{holdToSaveTier}% Discount</p>
+              <p className="text-xs font-semibold text-fuchsia-300">{holdToSaveTier}% Discount</p>
             </div>
 
             {/* Tier Badge */}
-            <div className="rounded-lg bg-gradient-to-r from-amber-500/10 to-yellow-500/10 p-2">
+            <div className="rounded-lg bg-gradient-to-r from-fuchsia-500/10 to-purple-500/10 p-2">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-amber-200">
+                <span className="text-xs font-semibold text-fuchsia-200">
                   {holdToSaveTier === 20
                     ? '🌟 Platinum Tier'
                     : holdToSaveTier === 15
@@ -159,7 +159,7 @@ export default function EarningsCard({
               {currentTierIndex < 4 && (
                 <div className="mt-2 h-1 overflow-hidden rounded-full bg-gray-700/50">
                   <div
-                    className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-fuchsia-400 to-purple-300 transition-all duration-500"
                     style={{ width: `${tierProgress}%` }}
                   />
                 </div>
@@ -188,8 +188,8 @@ export default function EarningsCard({
 
       {/* Settlement Window Notice */}
       {pendingCash > 0 && (
-        <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-3">
-          <p className="text-xs text-blue-300">
+        <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-3">
+          <p className="text-xs text-cyan-300">
             <span className="font-semibold">Settlement in progress:</span> Your pending earnings will be
             available in 7-14 days. Check back soon!
           </p>

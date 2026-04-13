@@ -40,7 +40,7 @@ export default function EventsPage() {
           >
             <div className="flex items-start justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-100">{event.name}</h3>
-              <span className="text-xs rounded-full bg-blue-500/20 px-2.5 py-1 text-blue-300">
+              <span className="text-xs rounded-full bg-cyan-500/20 px-2.5 py-1 text-cyan-300">
                 {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
               </span>
             </div>
@@ -62,12 +62,12 @@ export default function EventsPage() {
 
             <div className="mb-3 h-2 bg-gray-700/50 rounded-full overflow-hidden">
               <div
-                className="h-full bg-blue-500"
+                className="h-full bg-cyan-500"
                 style={{ width: `${(event.rsvps / event.capacity) * 100}%` }}
               />
             </div>
 
-            <button className="w-full rounded-lg bg-amber-500/20 py-2 text-sm font-medium text-amber-300 hover:bg-amber-500/30 transition-colors">
+            <button className="w-full rounded-lg bg-fuchsia-500/20 py-2 text-sm font-medium text-fuchsia-300 hover:bg-fuchsia-500/30 transition-colors">
               Manage Event
             </button>
           </div>

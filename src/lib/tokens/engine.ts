@@ -1,5 +1,5 @@
 /**
- * FameBar OS $FAME Token Calculation Engine
+ * FameClub $FAME Token Calculation Engine
  *
  * Manages token rewards, founder boost multipliers, and Hold-to-Save discounts.
  *

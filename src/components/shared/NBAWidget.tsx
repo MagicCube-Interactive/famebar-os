@@ -99,7 +99,7 @@ export default function NBAWidget({
       {/* Widget Header */}
       {showTitle && (
         <div className="mb-5 flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-amber-400" />
+          <Sparkles className="h-5 w-5 text-fuchsia-400" />
           <h2 className="text-base font-semibold text-gray-100">{displayTitle}</h2>
         </div>
       )}
@@ -123,9 +123,9 @@ export default function NBAWidget({
 
       {/* Insight Footer */}
       {actions.length > 0 && (
-        <div className="mt-4 rounded-lg border border-gray-700/30 bg-gradient-to-r from-amber-900/20 to-yellow-900/20 p-3">
+        <div className="mt-4 rounded-lg border border-gray-700/30 bg-gradient-to-r from-fuchsia-900/20 to-purple-900/20 p-3">
           <p className="text-xs text-gray-400">
-            <span className="font-semibold text-amber-300">Tip:</span> Completing high-priority actions
+            <span className="font-semibold text-fuchsia-300">Tip:</span> Completing high-priority actions
             unlocks rewards and moves you closer to your goals.
           </p>
         </div>

@@ -73,9 +73,9 @@ export default function ApprovalQueue({ count }: ApprovalQueueProps) {
       case 'high':
         return 'text-red-400 bg-red-500/10';
       case 'medium':
-        return 'text-amber-400 bg-amber-500/10';
+        return 'text-fuchsia-400 bg-fuchsia-500/10';
       case 'low':
-        return 'text-blue-400 bg-blue-500/10';
+        return 'text-cyan-400 bg-cyan-500/10';
       default:
         return 'text-gray-400 bg-gray-500/10';
     }

@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { isAmbassador } from '@/types';
+import { canViewAmbassadorPages } from '@/types';
 import { Megaphone, TrendingUp, Users, Zap } from 'lucide-react';
 
 export default function CampaignsPage() {
   const { userProfile } = useAuthContext();
 
-  if (!userProfile || !isAmbassador(userProfile)) {
+  if (!userProfile || !canViewAmbassadorPages(userProfile)) {
     return null;
   }
 
@@ -54,15 +54,15 @@ export default function CampaignsPage() {
 
       {/* Campaign Stats */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-4">
+        <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-4">
           <p className="text-xs text-gray-500">Active Campaigns</p>
-          <p className="mt-2 text-2xl font-bold text-blue-400">
+          <p className="mt-2 text-2xl font-bold text-cyan-400">
             {campaigns.filter(c => c.status === 'active').length}
           </p>
         </div>
-        <div className="rounded-lg border border-amber-500/30 bg-amber-950/20 p-4">
+        <div className="rounded-lg border border-fuchsia-500/30 bg-fuchsia-950/20 p-4">
           <p className="text-xs text-gray-500">Total Uses</p>
-          <p className="mt-2 text-2xl font-bold text-amber-400">
+          <p className="mt-2 text-2xl font-bold text-fuchsia-400">
             {campaigns.reduce((sum, c) => sum + c.uses, 0)}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function CampaignsPage() {
             key={campaign.id}
             className={`rounded-lg border p-6 transition-all duration-200 ${
               campaign.status === 'active'
-                ? 'border-amber-500/30 bg-gradient-to-br from-amber-950/20 to-yellow-950/20'
+                ? 'border-fuchsia-500/30 bg-gradient-to-br from-fuchsia-950/20 to-purple-950/20'
                 : 'border-gray-700/50 bg-gray-800/30'
             }`}
           >
@@ -108,7 +108,7 @@ export default function CampaignsPage() {
                 <div className="mb-4 grid grid-cols-3 gap-3">
                   <div>
                     <p className="text-xs text-gray-500">Code Uses</p>
-                    <p className="mt-1 text-lg font-bold text-amber-400">{campaign.uses}</p>
+                    <p className="mt-1 text-lg font-bold text-fuchsia-400">{campaign.uses}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Conversions</p>
@@ -116,13 +116,13 @@ export default function CampaignsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Earnings</p>
-                    <p className="mt-1 text-lg font-bold text-yellow-400">
+                    <p className="mt-1 text-lg font-bold text-fuchsia-400">
                       ${campaign.earnings.toFixed(2)}
                     </p>
                   </div>
                 </div>
 
-                <button className="w-full rounded-lg border border-amber-500/50 bg-amber-500/10 px-4 py-2.5 text-sm font-semibold text-amber-300 transition-all duration-200 hover:bg-amber-500/20">
+                <button className="w-full rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/10 px-4 py-2.5 text-sm font-semibold text-fuchsia-300 transition-all duration-200 hover:bg-fuchsia-500/20">
                   View Campaign Code
                 </button>
               </>
@@ -138,9 +138,9 @@ export default function CampaignsPage() {
       </div>
 
       {/* Campaign Tips */}
-      <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-6">
-        <h3 className="mb-3 font-semibold text-blue-300">Campaign Tips</h3>
-        <ul className="space-y-2 text-sm text-blue-200">
+      <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-6">
+        <h3 className="mb-3 font-semibold text-cyan-300">Campaign Tips</h3>
+        <ul className="space-y-2 text-sm text-cyan-200">
           <li>✓ Join campaigns that match your audience for higher conversions</li>
           <li>✓ Use campaign codes alongside your primary code for tracking</li>
           <li>✓ Share campaign-specific content for 2-3x engagement boost</li>

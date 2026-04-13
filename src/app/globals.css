@@ -13,8 +13,8 @@ html {
 }
 
 body {
-  background-color: #0e131f;
-  color: #dde2f3;
+  background-color: #000000;
+  color: #e8e0f0;
 }
 
 /* Custom scrollbar - dark theme */
@@ -24,34 +24,43 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0e131f;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2f3542;
+  background: #2e1a45;
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #343946;
+  background: #2a1a3e;
 }
 
 /* Utility classes */
 @layer utilities {
   .glass-panel {
-    background: rgba(47, 53, 66, 0.6);
+    background: rgba(46, 26, 69, 0.6);
     backdrop-filter: blur(24px);
   }
 
+  .brand-glow {
+    filter: drop-shadow(0 0 12px rgba(189, 44, 140, 0.3));
+  }
+
+  .brand-glow-box {
+    box-shadow: 0 0 20px rgba(189, 44, 140, 0.2);
+  }
+
+  /* Keep old class names as aliases for compatibility */
   .amber-glow {
-    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.3));
+    filter: drop-shadow(0 0 12px rgba(189, 44, 140, 0.3));
   }
 
   .amber-glow-box {
-    box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 20px rgba(189, 44, 140, 0.2);
   }
 
   .shimmer-future {
-    background: radial-gradient(circle at top left, rgba(255, 185, 95, 0.05) 0%, rgba(26, 32, 44, 1) 100%);
+    background: radial-gradient(circle at top left, rgba(189, 44, 140, 0.05) 0%, rgba(26, 15, 46, 1) 100%);
   }
 }

@@ -2,13 +2,13 @@
 
 import React from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { isAmbassador } from '@/types';
+import { canViewAmbassadorPages } from '@/types';
 import { BookOpen, CheckCircle, Clock, Zap } from 'lucide-react';
 
 export default function TrainingPage() {
   const { userProfile } = useAuthContext();
 
-  if (!userProfile || !isAmbassador(userProfile)) {
+  if (!userProfile || !canViewAmbassadorPages(userProfile)) {
     return null;
   }
 
@@ -17,7 +17,7 @@ export default function TrainingPage() {
     {
       id: 1,
       title: 'Getting Started',
-      description: 'Foundations of FameBar and your role as ambassador',
+      description: 'Foundations of FameClub and your role as ambassador',
       lessons: [
         { title: 'Platform Overview', completed: true },
         { title: 'Your First Code', completed: true },
@@ -83,7 +83,7 @@ export default function TrainingPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-on-surface">Training Center</h1>
-        <p className="mt-2 text-on-surface-variant">Master the skills to grow your FameBar business</p>
+        <p className="mt-2 text-on-surface-variant">Master the skills to grow your FameClub business</p>
       </div>
 
       {/* Overall Progress */}
@@ -210,7 +210,7 @@ export default function TrainingPage() {
           <div>
             <h3 className="font-bold text-secondary">Ambassador Certification</h3>
             <p className="mt-2 text-sm text-on-surface-variant">
-              Complete all modules to earn your official FameBar Ambassador Certification and unlock
+              Complete all modules to earn your official FameClub Ambassador Certification and unlock
               exclusive perks like priority support and early access to new features.
             </p>
             <p className="mt-3 text-xs text-secondary">

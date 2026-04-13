@@ -43,7 +43,7 @@ export default function SettingsPage() {
               className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 hover:bg-gray-800/50 cursor-pointer transition-colors"
             >
               <div className="flex items-start gap-4">
-                <Icon className="h-6 w-6 text-amber-400 flex-shrink-0 mt-1" />
+                <Icon className="h-6 w-6 text-fuchsia-400 flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-100 mb-1">{setting.title}</h3>
                   <p className="text-sm text-gray-400">{setting.description}</p>

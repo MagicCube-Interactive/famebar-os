@@ -64,9 +64,9 @@ export function getActionColor(
 
   if (priority === 2) {
     return {
-      bgColor: 'bg-gradient-to-br from-amber-950/30 to-yellow-900/20',
-      borderColor: 'border-amber-500/30 hover:border-amber-500/50',
-      textColor: 'text-amber-400',
+      bgColor: 'bg-gradient-to-br from-fuchsia-950/30 to-purple-900/20',
+      borderColor: 'border-fuchsia-500/30 hover:border-fuchsia-500/50',
+      textColor: 'text-fuchsia-400',
     };
   }
 
@@ -79,19 +79,19 @@ export function getActionColor(
       textColor: 'text-purple-300',
     },
     share_code: {
-      bgColor: 'bg-gradient-to-br from-cyan-950/20 to-blue-900/10',
+      bgColor: 'bg-gradient-to-br from-cyan-950/20 to-cyan-900/10',
       borderColor: 'border-cyan-500/20 hover:border-cyan-500/40',
       textColor: 'text-cyan-300',
     },
     tier_advancement: {
-      bgColor: 'bg-gradient-to-br from-yellow-950/20 to-amber-900/10',
-      borderColor: 'border-yellow-500/20 hover:border-yellow-500/40',
-      textColor: 'text-yellow-300',
+      bgColor: 'bg-gradient-to-br from-fuchsia-950/20 to-fuchsia-900/10',
+      borderColor: 'border-fuchsia-500/20 hover:border-fuchsia-500/40',
+      textColor: 'text-fuchsia-300',
     },
 
     // Admin
     review_orders: {
-      bgColor: 'bg-gradient-to-br from-indigo-950/20 to-blue-900/10',
+      bgColor: 'bg-gradient-to-br from-indigo-950/20 to-cyan-900/10',
       borderColor: 'border-indigo-500/20 hover:border-indigo-500/40',
       textColor: 'text-indigo-300',
     },
@@ -128,8 +128,8 @@ export function getRewardBadgeStyle(
   // If reward contains tokens
   if (reward.includes('FAME') || reward.includes('token')) {
     return {
-      badgeBg: 'bg-gradient-to-r from-amber-900/40 to-yellow-900/30',
-      badgeText: 'text-amber-200',
+      badgeBg: 'bg-gradient-to-r from-fuchsia-900/40 to-purple-900/30',
+      badgeText: 'text-fuchsia-200',
     };
   }
 
@@ -143,8 +143,8 @@ export function getRewardBadgeStyle(
 
   // Default
   return {
-    badgeBg: 'bg-gradient-to-r from-blue-900/40 to-cyan-900/30',
-    badgeText: 'text-blue-200',
+    badgeBg: 'bg-gradient-to-r from-cyan-900/40 to-cyan-900/30',
+    badgeText: 'text-cyan-200',
   };
 }
 
@@ -158,8 +158,8 @@ export function getPriorityLabel(priority: 1 | 2 | 3 | 4 | 5): {
 } {
   const priorityMap: Record<number, ReturnType<typeof getPriorityLabel>> = {
     1: { label: 'Urgent', bgColor: 'bg-red-500/20', textColor: 'text-red-300' },
-    2: { label: 'High', bgColor: 'bg-amber-500/20', textColor: 'text-amber-300' },
-    3: { label: 'Medium', bgColor: 'bg-blue-500/20', textColor: 'text-blue-300' },
+    2: { label: 'High', bgColor: 'bg-fuchsia-500/20', textColor: 'text-fuchsia-300' },
+    3: { label: 'Medium', bgColor: 'bg-cyan-500/20', textColor: 'text-cyan-300' },
     4: { label: 'Low', bgColor: 'bg-gray-600/20', textColor: 'text-gray-300' },
     5: { label: 'Optional', bgColor: 'bg-gray-600/10', textColor: 'text-gray-400' },
   };

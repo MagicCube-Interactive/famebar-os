@@ -24,7 +24,7 @@ function generateCode(): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { userId, referralCode: sponsorCode } = body;
+    const { userId, referralCode: sponsorCode, telegramHandle, signalHandle } = body;
 
     if (!userId || !sponsorCode) {
       return NextResponse.json(
@@ -93,6 +93,23 @@ export async function POST(request: Request) {
         { error: 'Failed to create ambassador profile' },
         { status: 500 }
       );
+    }
+
+    // 4b. Update profiles with telegram & signal handles
+    if (telegramHandle || signalHandle) {
+      const profileUpdate: Record<string, string> = {};
+      if (telegramHandle) profileUpdate.telegram_handle = telegramHandle;
+      if (signalHandle) profileUpdate.signal_handle = signalHandle;
+
+      const { error: profileUpdateError } = await supabase
+        .from('profiles')
+        .update(profileUpdate)
+        .eq('id', userId);
+
+      if (profileUpdateError) {
+        // Column may not exist yet — data is preserved in auth user_metadata
+        console.warn('Profile update warning (signal/telegram):', profileUpdateError.message);
+      }
     }
 
     // 5. Create referral_codes entry for the new ambassador

@@ -45,7 +45,7 @@ export default function MonthlyForecast({
       {/* Header */}
       <div className="rounded-lg border border-gray-700/50 bg-gradient-to-br from-gray-800/50 to-gray-900/30 p-6">
         <h3 className="mb-6 flex items-center gap-2 text-sm font-semibold text-gray-100">
-          <TrendingUp className="h-5 w-5 text-amber-400" />
+          <TrendingUp className="h-5 w-5 text-fuchsia-400" />
           Monthly Earnings Forecast
         </h3>
 
@@ -53,13 +53,13 @@ export default function MonthlyForecast({
         <div className="mb-6 space-y-3">
           <div className="flex items-center justify-between">
             <p className="text-xs font-medium text-gray-500">Month Progress</p>
-            <p className="text-xs font-semibold text-amber-300">
+            <p className="text-xs font-semibold text-fuchsia-300">
               {daysElapsed} of {daysInMonth} days
             </p>
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-gray-700/50">
             <div
-              className="h-full bg-gradient-to-r from-amber-400 to-yellow-300 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-fuchsia-400 to-purple-300 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -120,12 +120,12 @@ export default function MonthlyForecast({
       </div>
 
       {/* Insight */}
-      <div className="rounded-lg border border-blue-500/30 bg-blue-950/20 p-4">
+      <div className="rounded-lg border border-cyan-500/30 bg-cyan-950/20 p-4">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-4 w-4 flex-shrink-0 text-blue-400 mt-0.5" />
+          <AlertCircle className="h-4 w-4 flex-shrink-0 text-cyan-400 mt-0.5" />
           <div>
-            <p className="text-xs font-semibold text-blue-300">Pro Tip</p>
-            <p className="mt-1 text-xs text-blue-200">
+            <p className="text-xs font-semibold text-cyan-300">Pro Tip</p>
+            <p className="mt-1 text-xs text-cyan-200">
               {remainingDays > 0
                 ? `You have ${remainingDays} days left this month. Accelerate your sales by ${Math.round((optimisticProjection - likelyProjection) / remainingDays)}/day to reach your optimistic target!`
                 : 'Month is complete. Check your final earnings in the history tab.'}

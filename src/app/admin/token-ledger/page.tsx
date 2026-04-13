@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Zap } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import DataTable, { Column } from '@/components/admin/DataTable';
 
 interface TokenEvent {
@@ -23,17 +23,33 @@ export default function TokenLedgerPage() {
 
   useEffect(() => {
     const fetchEvents = async () => {
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('token_events')
-        .select('id, order_id, tokens_earned, founder_multiplier, final_tokens, status, created_at, ambassador_id, ambassador_profiles!token_events_ambassador_id_fkey(id, profiles!ambassador_profiles_id_fkey(full_name))')
-        .order('created_at', { ascending: false })
-        .limit(200);
+      const safe = createSafeClient();
+
+      // Fetch token events and ambassador profiles separately (safe client doesn't support joins)
+      const [tokenResult, ambResult] = await Promise.all([
+        safe.from('token_events').select('*').order('created_at', { ascending: false }).limit(200),
+        safe.from('ambassador_profiles').select('id, referral_code'),
+      ]);
+
+      // Build ambassador lookup and also fetch profile names
+      const ambMap: Record<string, string> = {};
+      if (ambResult.data) {
+        // Fetch profile names for all ambassadors
+        const ambIds = (ambResult.data as any[]).map((a: any) => a.id);
+        if (ambIds.length > 0) {
+          const profileResult = await safe.from('profiles').select('id, full_name').in('id', ambIds);
+          if (profileResult.data) {
+            (profileResult.data as any[]).forEach((p: any) => {
+              ambMap[p.id] = p.full_name || p.id.slice(0, 8);
+            });
+          }
+        }
+      }
 
       setEvents(
-        (data || []).map((e: any) => ({
+        ((tokenResult.data || []) as any[]).map((e: any) => ({
           id: e.id,
-          ambassador_name: e.ambassador_profiles?.profiles?.full_name || e.ambassador_id?.slice(0, 8) || '—',
+          ambassador_name: ambMap[e.ambassador_id] || e.ambassador_id?.slice(0, 8) || '—',
           order_id: e.order_id,
           tokens_earned: Number(e.tokens_earned),
           founder_multiplier: Number(e.founder_multiplier),

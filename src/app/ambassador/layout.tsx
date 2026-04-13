@@ -81,7 +81,7 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
       {/* Top Bar */}
       <header className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between h-14 px-6 bg-background">
         <div className="flex items-center gap-4">
-          <span className="text-lg font-bold tracking-tight text-on-surface">FameBar OS</span>
+          <span className="text-lg font-bold tracking-tight text-on-surface">FameClub</span>
         </div>
         <div className="flex items-center gap-4">
           <button className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
@@ -96,7 +96,7 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
       {/* Sidebar - Desktop */}
       <aside className="fixed left-0 top-0 h-full flex-col pt-4 pb-6 bg-gray-900 w-[240px] z-40 hidden md:flex">
         <div className="px-6 mb-8 pt-10">
-          <h1 className="text-xl font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">FameBar OS</h1>
+          <h1 className="text-xl font-black bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">FameClub</h1>
           <p className="text-[10px] text-gray-500 font-medium tracking-widest uppercase mt-1">Enterprise Portal</p>
         </div>
         <nav className="flex-1 space-y-1">

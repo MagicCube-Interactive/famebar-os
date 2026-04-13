@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
   Share2,
@@ -40,27 +39,25 @@ export default function ShareHubPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || role !== 'ambassador') return;
+    if (!user || role !== 'ambassador' && role !== 'admin') return;
 
     const fetchData = async () => {
-      const supabase = createClient();
       const safeSupa = createSafeClient();
 
       const [profileResult, codesResult, ordersResult, monthOrdersResult] = await Promise.all([
-        supabase
+        safeSupa
           .from('ambassador_profiles')
           .select('referral_code')
           .eq('id', user.id)
           .single(),
 
-        supabase
+        safeSupa
           .from('referral_codes')
           .select('id, code, type, campaign_name, usage_count, is_active')
           .eq('ambassador_id', user.id)
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
 
-        // Orders queries via safe client to bypass RLS
         safeSupa
           .from('orders')
           .select('id')
@@ -85,7 +82,7 @@ export default function ShareHubPage() {
     fetchData();
   }, [user, role]);
 
-  if (!user || role !== 'ambassador') return null;
+  if (!user || role !== 'ambassador' && role !== 'admin') return null;
 
   const shortLink = primaryCode ? `fmbar.co/ref/${primaryCode.toLowerCase()}` : '';
   const totalUsage = referralCodes.reduce((sum, c) => sum + (c.usage_count || 0), 0);
@@ -104,7 +101,7 @@ export default function ShareHubPage() {
       icon: Send,
       iconBg: 'bg-blue-500/20',
       iconColor: 'text-blue-400',
-      template: `Hey team! Exclusive 25% off FameBar OS access via my private link. Use code ${primaryCode} at checkout. Limited spots available for the new intake.`,
+      template: `Hey team! Exclusive 25% off FameClub access via my private link. Use code ${primaryCode} at checkout. Limited spots available for the new intake.`,
     },
     {
       id: 'instagram',

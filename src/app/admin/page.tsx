@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 
 interface AdminMetrics {
   dailyGMV: number;
@@ -75,7 +76,8 @@ export default function AdminOverview() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const supabase = createClient();
+      const safe = createSafeClient();
+      const supabase = createClient(); // kept for campaigns (not in safe-client whitelist)
       const today = new Date().toISOString().split('T')[0];
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
 
@@ -94,73 +96,73 @@ export default function AdminOverview() {
         campaignsResult,
       ] = await Promise.all([
         // Daily GMV
-        supabase
+        safe
           .from('orders')
           .select('total')
           .gte('created_at', today)
           .eq('payment_status', 'paid'),
 
         // Monthly GMV
-        supabase
+        safe
           .from('orders')
           .select('total')
           .gte('created_at', monthStart)
           .eq('payment_status', 'paid'),
 
         // Pending commissions
-        supabase
+        safe
           .from('commission_events')
           .select('amount')
           .eq('status', 'pending'),
 
         // Available commissions
-        supabase
+        safe
           .from('commission_events')
           .select('amount')
           .eq('status', 'available'),
 
         // Paid commissions
-        supabase
+        safe
           .from('commission_events')
           .select('amount')
           .eq('status', 'paid'),
 
         // Token liabilities (pending + available)
-        supabase
+        safe
           .from('token_events')
           .select('final_tokens')
           .in('status', ['pending', 'available']),
 
         // Total ambassadors
-        supabase
+        safe
           .from('ambassador_profiles')
-          .select('id', { count: 'exact' }),
+          .select('id'),
 
         // Active ambassadors (hit $300 personal sales)
-        supabase
+        safe
           .from('ambassador_profiles')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('is_active', true),
 
         // Total orders
-        supabase
+        safe
           .from('orders')
-          .select('id', { count: 'exact' }),
+          .select('id'),
 
         // Refund requests
-        supabase
+        safe
           .from('orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('payment_status', 'refunded'),
 
         // Pending settlement orders
-        supabase
+        safe
           .from('orders')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('settlement_status', 'pending')
           .eq('payment_status', 'paid'),
 
-        // Campaigns
+        // Campaigns (not in safe-client whitelist, use regular client)
         supabase
           .from('campaigns')
           .select('id, name, status, metrics')
@@ -182,12 +184,12 @@ export default function AdminOverview() {
         totalAvailableCommissions: availComm,
         totalPaidCommissions: paidComm,
         tokenLiabilities,
-        totalAmbassadors: totalAmbResult.count || 0,
-        activeAmbassadors: activeAmbResult.count || 0,
-        totalOrders: totalOrdersResult.count || 0,
+        totalAmbassadors: totalAmbResult.data?.length || 0,
+        activeAmbassadors: activeAmbResult.data?.length || 0,
+        totalOrders: totalOrdersResult.data?.length || 0,
         ordersToday: dailyOrdersResult.data?.length || 0,
-        refundCount: refundResult.count || 0,
-        pendingSettlementCount: pendingSettleResult.count || 0,
+        refundCount: refundResult.data?.length || 0,
+        pendingSettlementCount: pendingSettleResult.data?.length || 0,
       });
 
       setCampaigns(campaignsResult.data || []);

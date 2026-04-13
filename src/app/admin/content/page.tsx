@@ -17,7 +17,7 @@ export default function ContentPage() {
           <h1 className="text-3xl font-bold text-gray-100">Content Library</h1>
           <p className="text-gray-400">Manage resources and marketing materials</p>
         </div>
-        <button className="flex items-center gap-2 rounded-lg bg-amber-500/20 px-4 py-2.5 text-sm font-medium text-amber-300 hover:bg-amber-500/30 transition-colors">
+        <button className="flex items-center gap-2 rounded-lg bg-fuchsia-500/20 px-4 py-2.5 text-sm font-medium text-fuchsia-300 hover:bg-fuchsia-500/30 transition-colors">
           <Plus className="h-4 w-4" />
           Upload Content
         </button>
@@ -30,7 +30,7 @@ export default function ContentPage() {
             className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-4"
           >
             <div className="flex items-start gap-3 mb-3">
-              <FileText className="h-8 w-8 text-blue-400 flex-shrink-0" />
+              <FileText className="h-8 w-8 text-cyan-400 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-gray-100 truncate">{item.title}</h3>
                 <p className="text-xs text-gray-500 mt-1">{item.size}</p>

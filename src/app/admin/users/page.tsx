@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 
 interface User {
   id: string;
@@ -57,8 +57,8 @@ export default function UsersPage() {
   const [inviteRole, setInviteRole] = useState('ambassador');
 
   const fetchUsers = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
+    const safe = createSafeClient();
+    const { data } = await safe
       .from('profiles')
       .select('id, full_name, email, role, is_verified, created_at')
       .order('created_at', { ascending: false })
@@ -130,50 +130,68 @@ export default function UsersPage() {
     setSaveSuccess(false);
 
     try {
-      const supabase = createClient();
+      const safe = createSafeClient();
       const oldRole = editUser.role;
       const newRole = editRole;
       const isPromotingToAmbassador =
         newRole === 'ambassador' &&
         oldRole !== 'ambassador';
 
-      // Update profiles table
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({
-          role: newRole,
-          is_verified: editVerified,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', editUser.id);
-
-      if (profileError) throw profileError;
+      // Update profiles table via admin mutate endpoint (bypasses RLS recursion)
+      const profileRes = await fetch('/api/admin/mutate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          table: 'profiles',
+          action: 'update',
+          match: { column: 'id', value: editUser.id },
+          fields: {
+            role: newRole,
+            is_verified: editVerified,
+            updated_at: new Date().toISOString(),
+          },
+        }),
+      });
+      const profileResult = await profileRes.json().catch(() => ({ error: 'Invalid response' }));
+      if (!profileRes.ok || !profileResult.success) {
+        throw new Error(profileResult.error || 'Failed to update profile');
+      }
 
       // If promoting to ambassador, ensure ambassador_profiles record exists
       if (isPromotingToAmbassador) {
-        const { data: existing } = await supabase
+        const { data: existing } = await safe
           .from('ambassador_profiles')
           .select('id')
           .eq('id', editUser.id)
           .single();
 
         if (!existing) {
-          const { error: insertError } = await supabase
-            .from('ambassador_profiles')
-            .insert({
-              id: editUser.id,
-              referral_code: generateReferralCode(),
-              tier: 0,
-              rank: 'new',
-              is_founder: false,
-              is_active: false,
-              personal_sales_this_month: 0,
-              total_sales: 0,
-              total_recruits: 0,
-              kyc_verified: false,
-            });
-
-          if (insertError) throw insertError;
+          const insertRes = await fetch('/api/admin/mutate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              table: 'ambassador_profiles',
+              action: 'insert',
+              fields: {
+                id: editUser.id,
+                referral_code: generateReferralCode(),
+                tier: 0,
+                rank: 'new',
+                is_founder: false,
+                is_active: false,
+                personal_sales_this_month: 0,
+                total_sales: 0,
+                total_recruits: 0,
+                kyc_verified: false,
+              },
+            }),
+          });
+          const insertResult = await insertRes.json().catch(() => ({ error: 'Invalid response' }));
+          if (!insertRes.ok || !insertResult.success) {
+            throw new Error(insertResult.error || 'Failed to create ambassador profile');
+          }
         }
       }
 

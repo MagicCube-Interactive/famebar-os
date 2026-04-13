@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
-import { createClient } from '@/lib/supabase/client';
 import { createSafeClient } from '@/lib/supabase/safe-client';
+import Link from 'next/link';
 import {
   Copy,
   Check,
@@ -15,6 +15,8 @@ import {
   Lock,
   Activity,
   ShoppingBag,
+  Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import { PLATFORM_CONFIG } from '@/types';
 import RevenueWaterfall from '@/components/shared/RevenueWaterfall';
@@ -76,15 +78,17 @@ export default function AmbassadorPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberHeatmap[]>([]);
   const [revenueByLevel, setRevenueByLevel] = useState<Record<number, number>>({});
 
+  const [setupRetrying, setSetupRetrying] = useState(false);
+  const [setupError, setSetupError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (!user || role !== 'ambassador') return;
+    if (!user || (role !== 'ambassador' && role !== 'admin')) return;
 
     const fetchData = async () => {
-      const supabase = createClient();
       const safeSupa = createSafeClient();
       const userId = user.id;
 
-      // Fetch all data in parallel
+      // Fetch all data in parallel (all via safe client to bypass RLS)
       const [
         ambassadorResult,
         availCommResult,
@@ -96,20 +100,20 @@ export default function AmbassadorPage() {
         weekRecruitsResult,
       ] = await Promise.all([
         // Ambassador profile
-        supabase
+        safeSupa
           .from('ambassador_profiles')
           .select('referral_code, is_founder, founder_start_date, personal_sales_this_month, total_recruits, kyc_verified, tier, rank')
           .eq('id', userId)
           .single(),
 
-        // Available commissions total (via safe client to bypass RLS)
+        // Available commissions total
         safeSupa
           .from('commission_events')
           .select('amount')
           .eq('ambassador_id', userId)
           .eq('status', 'available'),
 
-        // Pending commissions total (via safe client to bypass RLS)
+        // Pending commissions total
         safeSupa
           .from('commission_events')
           .select('amount')
@@ -117,27 +121,27 @@ export default function AmbassadorPage() {
           .eq('status', 'pending'),
 
         // Available tokens total
-        supabase
+        safeSupa
           .from('token_events')
           .select('final_tokens')
           .eq('ambassador_id', userId)
           .eq('status', 'available'),
 
         // Pending tokens total
-        supabase
+        safeSupa
           .from('token_events')
           .select('final_tokens')
           .eq('ambassador_id', userId)
           .eq('status', 'pending'),
 
-        // Direct orders today (via safe client to bypass RLS)
+        // Direct orders today
         safeSupa
           .from('orders')
           .select('id')
           .eq('ambassador_id', userId)
           .gte('created_at', new Date().toISOString().split('T')[0]),
 
-        // New unique customers this week (via safe client to bypass RLS)
+        // New unique customers this week
         safeSupa
           .from('orders')
           .select('buyer_id')
@@ -145,9 +149,9 @@ export default function AmbassadorPage() {
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
 
         // New recruits this week
-        supabase
+        safeSupa
           .from('ambassador_profiles')
-          .select('id', { count: 'exact' })
+          .select('id')
           .eq('sponsor_id', userId)
           .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
       ]);
@@ -171,7 +175,7 @@ export default function AmbassadorPage() {
         pendingTokens: pendTokens,
         directOrdersToday: (todayOrdersResult as any).count ?? (todayOrdersResult.data || []).length,
         newCustomersThisWeek: uniqueBuyers.size,
-        newRecruitsThisWeek: weekRecruitsResult.count || 0,
+        newRecruitsThisWeek: (weekRecruitsResult.data || []).length,
       });
 
       // Fetch tier-gated leader data for tier 4+ ambassadors
@@ -189,7 +193,7 @@ export default function AmbassadorPage() {
             .limit(10),
 
           // Team members for heatmap (direct recruits)
-          supabase
+          safeSupa
             .from('ambassador_profiles')
             .select('id, personal_sales_this_month, total_recruits, is_active, created_at, profiles!ambassador_profiles_id_fkey(full_name)')
             .eq('sponsor_id', userId),
@@ -259,12 +263,73 @@ export default function AmbassadorPage() {
     fetchData();
   }, [user, role]);
 
-  if (!user || role !== 'ambassador') return null;
+  if (!user || (role !== 'ambassador' && role !== 'admin')) return null;
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="w-8 h-8 rounded-full border-4 border-secondary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  // Setup recovery for ambassadors with missing profile
+  if (!ambassadorData && role === 'ambassador') {
+    return (
+      <div className="max-w-md mx-auto py-12 text-center space-y-4">
+        <AlertTriangle className="h-12 w-12 text-primary-container mx-auto" />
+        <h2 className="text-xl font-bold text-on-surface">Ambassador Setup Incomplete</h2>
+        <p className="text-on-surface-variant text-sm">
+          Your account was created but your ambassador profile could not be set up. This can happen due to a temporary issue.
+        </p>
+        {setupError && <p className="text-error text-sm">{setupError}</p>}
+        <button
+          disabled={setupRetrying}
+          onClick={async () => {
+            setSetupRetrying(true);
+            setSetupError(null);
+            try {
+              const meta = user.user_metadata || {};
+              const res = await fetch('/api/setup-ambassador', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  userId: user.id,
+                  referralCode: meta.referral_code || '',
+                  telegramHandle: meta.telegram_handle || '',
+                  signalHandle: meta.signal_handle || '',
+                }),
+              });
+              if (!res.ok) throw new Error('Setup failed');
+              window.location.reload();
+            } catch {
+              setSetupError('Setup failed. Please contact support if this persists.');
+              setSetupRetrying(false);
+            }
+          }}
+          className="px-6 py-3 bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold rounded-lg disabled:opacity-50"
+        >
+          {setupRetrying ? 'Retrying...' : 'Retry Setup'}
+        </button>
+      </div>
+    );
+  }
+
+  // Admin viewing ambassador pages with no ambassador profile
+  if (!ambassadorData && role === 'admin') {
+    return (
+      <div className="space-y-6">
+        <div className="p-3 rounded-lg bg-tertiary/10 border border-tertiary/30 flex items-center gap-3">
+          <Shield className="h-5 w-5 text-tertiary" />
+          <p className="text-sm text-tertiary">
+            Viewing as admin — ambassador data may be limited.{' '}
+            <Link href="/admin" className="underline">Return to Admin Portal</Link>
+          </p>
+        </div>
+        <div className="text-center py-12">
+          <p className="text-on-surface-variant">No ambassador profile data to display.</p>
+          <Link href="/admin" className="text-primary-container mt-2 inline-block hover:underline">Return to Admin Portal</Link>
+        </div>
       </div>
     );
   }
@@ -739,7 +804,7 @@ export default function AmbassadorPage() {
                             order.payment_status === 'paid'
                               ? 'bg-emerald-500/20 text-emerald-400'
                               : order.payment_status === 'pending'
-                              ? 'bg-amber-500/20 text-amber-400'
+                              ? 'bg-fuchsia-500/20 text-fuchsia-400'
                               : 'bg-red-500/20 text-red-400'
                           }`}
                         >
@@ -788,13 +853,13 @@ export default function AmbassadorPage() {
                 <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">Active</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-black text-blue-400">
+                <p className="text-3xl font-black text-cyan-400">
                   {teamMembers.filter((m) => m.status === 'new').length}
                 </p>
                 <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">New</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-black text-amber-400">
+                <p className="text-3xl font-black text-fuchsia-400">
                   {teamMembers.filter((m) => m.status === 'stalled').length}
                 </p>
                 <p className="text-xs text-on-surface-variant mt-1 uppercase tracking-wider">Stalled</p>

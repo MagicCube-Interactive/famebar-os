@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Search, X, ChevronDown, ChevronRight } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import DataTable, { Column } from '@/components/admin/DataTable';
 
 interface Order {
@@ -40,8 +40,8 @@ export default function OrdersPage() {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    const supabase = createClient();
-    const { data } = await supabase
+    const safe = createSafeClient();
+    const { data } = await safe
       .from('orders')
       .select('id, ambassador_code, total, payment_status, settlement_status, created_at, buyer_id, profiles!orders_buyer_id_fkey(full_name)')
       .order('created_at', { ascending: false })

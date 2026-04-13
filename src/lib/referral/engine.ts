@@ -1,5 +1,5 @@
 /**
- * Referral Attribution Engine for FameBar OS
+ * Referral Attribution Engine for FameClub
  * Handles referral code generation, validation, and anti-abuse checks
  */
 

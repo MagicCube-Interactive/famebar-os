@@ -33,9 +33,9 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
       case 'active':
         return 'bg-emerald-500/30 border-emerald-500/50 hover:bg-emerald-500/40';
       case 'stalled':
-        return 'bg-amber-500/30 border-amber-500/50 hover:bg-amber-500/40';
+        return 'bg-fuchsia-500/30 border-fuchsia-500/50 hover:bg-fuchsia-500/40';
       case 'new':
-        return 'bg-blue-500/30 border-blue-500/50 hover:bg-blue-500/40';
+        return 'bg-cyan-500/30 border-cyan-500/50 hover:bg-cyan-500/40';
       case 'at-risk':
         return 'bg-red-500/30 border-red-500/50 hover:bg-red-500/40';
       default:
@@ -48,9 +48,9 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
       case 'active':
         return 'text-emerald-300';
       case 'stalled':
-        return 'text-amber-300';
+        return 'text-fuchsia-300';
       case 'new':
-        return 'text-blue-300';
+        return 'text-cyan-300';
       case 'at-risk':
         return 'text-red-300';
       default:
@@ -76,7 +76,7 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
             onClick={() => setSelectedStatus(status)}
             className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
               selectedStatus === status
-                ? 'bg-amber-500 text-gray-900'
+                ? 'bg-fuchsia-500 text-gray-900'
                 : 'border border-gray-700/50 bg-gray-800/30 text-gray-400 hover:text-gray-200'
             }`}
           >
@@ -127,7 +127,7 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Recruits:</span>
-                    <span className="font-semibold text-blue-300">{member.recruits}</span>
+                    <span className="font-semibold text-cyan-300">{member.recruits}</span>
                   </div>
                 </div>
 
@@ -154,11 +154,11 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
           <span className="text-gray-400">Active (sales + recruits)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-blue-500" />
+          <div className="h-3 w-3 rounded-full bg-cyan-500" />
           <span className="text-gray-400">New (first 30 days)</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-3 w-3 rounded-full bg-amber-500" />
+          <div className="h-3 w-3 rounded-full bg-fuchsia-500" />
           <span className="text-gray-400">Stalled (7+ days inactive)</span>
         </div>
         <div className="flex items-center gap-2">

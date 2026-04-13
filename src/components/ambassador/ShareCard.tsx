@@ -55,7 +55,7 @@ export default function ShareCard({
       case 'code':
         return 'from-purple-500/10 to-pink-500/10 border-purple-500/30';
       case 'link':
-        return 'from-blue-500/10 to-cyan-500/10 border-blue-500/30';
+        return 'from-cyan-500/10 to-cyan-500/10 border-cyan-500/30';
       case 'qr':
         return 'from-green-500/10 to-emerald-500/10 border-green-500/30';
       default:
@@ -114,7 +114,7 @@ export default function ShareCard({
         )}
         {usageCount !== undefined && (
           <div className="text-xs text-gray-500">
-            <span className="font-semibold text-amber-300">{usageCount}</span> uses
+            <span className="font-semibold text-fuchsia-300">{usageCount}</span> uses
           </div>
         )}
       </div>

@@ -31,9 +31,9 @@ export default function LevelBreakdown({
     const colors = [
       'from-red-500/20 to-red-600/10 border-red-500/30 text-red-300',      // L1
       'from-orange-500/20 to-orange-600/10 border-orange-500/30 text-orange-300',  // L2
-      'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30 text-yellow-300',  // L3
+      'from-fuchsia-500/20 to-fuchsia-600/10 border-fuchsia-500/30 text-fuchsia-300',  // L3
       'from-green-500/20 to-green-600/10 border-green-500/30 text-green-300',    // L4
-      'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-300',     // L5
+      'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30 text-cyan-300',     // L5
       'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-300',  // L6
     ];
     return colors[level - 1] || colors[0];
@@ -49,7 +49,7 @@ export default function LevelBreakdown({
       {/* Header */}
       <div className="border-b border-gray-700/30 bg-gray-900/50 px-6 py-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-100">
-          <TrendingUp className="h-5 w-5 text-amber-400" />
+          <TrendingUp className="h-5 w-5 text-fuchsia-400" />
           Network Breakdown by Level
         </h3>
         {totalNetworkEarnings && (
@@ -89,7 +89,7 @@ export default function LevelBreakdown({
 
                 {/* Commission Rate */}
                 <td className="px-6 py-4">
-                  <span className="text-sm font-semibold text-amber-300">
+                  <span className="text-sm font-semibold text-fuchsia-300">
                     {getCommissionRate(row.level)}
                   </span>
                 </td>

@@ -1,5 +1,5 @@
 /**
- * Next Best Action Engine for FameBar OS
+ * Next Best Action Engine for FameClub
  * Generates prioritized, contextual recommendations that drive engagement and revenue
  * Every screen answers: What have I earned? What should I do next? What unlocks if I do it?
  */

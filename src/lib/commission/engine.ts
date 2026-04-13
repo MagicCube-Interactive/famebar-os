@@ -1,5 +1,5 @@
 /**
- * FameBar OS Commission Calculation Engine
+ * FameClub Commission Calculation Engine
  *
  * Core business logic for the 7-tier affiliate network commission structure.
  * This is a critical financial system that must be mathematically perfect.

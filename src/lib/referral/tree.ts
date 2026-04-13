@@ -1,5 +1,5 @@
 /**
- * Referral Tree / Genealogy Management for FameBar OS
+ * Referral Tree / Genealogy Management for FameClub
  * Handles team hierarchy, upline/downline navigation, and team statistics
  */
 

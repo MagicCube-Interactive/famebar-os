@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import { DollarSign, X, CheckCircle, Loader2 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 import DataTable, { Column } from '@/components/admin/DataTable';
 
 // ============================================================================
@@ -51,8 +51,8 @@ export default function CashLedgerPage() {
   // ---- Fetch entries ----
   const fetchEntries = useCallback(async () => {
     setLoading(true);
-    const supabase = createClient();
-    const { data } = await supabase
+    const safe = createSafeClient();
+    const { data } = await safe
       .from('commission_events')
       .select('id, order_id, amount, tier, status, created_at, ambassador_id, ambassador_profiles!commission_events_ambassador_id_fkey(id, profiles!ambassador_profiles_id_fkey(full_name))')
       .order('created_at', { ascending: false })

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   signUpWithEmail,
+  signOut,
   isValidEmail,
   validatePassword,
   passwordsMatch,
@@ -29,7 +30,7 @@ export default function RegisterPage() {
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, role, user } = useAuth();
 
   const refFromUrl = searchParams.get('ref') || '';
 
@@ -41,6 +42,8 @@ function RegisterContent() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [telegramHandle, setTelegramHandle] = useState('');
+  const [signalHandle, setSignalHandle] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [ageConfirmed, setAgeConfirmed] = useState(false);
@@ -52,12 +55,7 @@ function RegisterContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !loading) {
-      router.push('/ambassador');
-    }
-  }, [isAuthenticated, loading, router]);
+  // No blind redirect — handled by interstitial below
 
   // Validate referral code against Supabase
   const validateReferralCode = useCallback(async (code: string) => {
@@ -70,36 +68,18 @@ function RegisterContent() {
 
     try {
       setIsCheckingCode(true);
-      const supabase = createClient();
 
-      // Check referral_codes table
-      const { data: codeData, error: codeError } = await supabase
-        .from('referral_codes')
-        .select('code, ambassador_id')
-        .eq('code', trimmed)
-        .eq('is_active', true)
-        .single();
+      const res = await fetch(`/api/sponsor-lookup?code=${encodeURIComponent(trimmed)}`);
+      const data = await res.json().catch(() => ({ valid: false }));
 
-      if (codeError || !codeData) {
+      if (!res.ok || !data.valid) {
         setReferralValid(false);
         setSponsorName('');
         return;
       }
 
       setReferralValid(true);
-
-      // Fetch sponsor name from profiles
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('first_name, last_name')
-        .eq('id', codeData.ambassador_id)
-        .single();
-
-      if (profile) {
-        setSponsorName(`${profile.first_name} ${profile.last_name}`);
-      } else {
-        setSponsorName('');
-      }
+      setSponsorName(data.sponsorName || '');
     } catch {
       setReferralValid(false);
       setSponsorName('');
@@ -137,6 +117,14 @@ function RegisterContent() {
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       return 'All fields are required';
+    }
+
+    if (!telegramHandle.trim()) {
+      return 'Telegram username is required';
+    }
+
+    if (!signalHandle.trim()) {
+      return 'Signal username is required';
     }
 
     if (!isValidEmail(email)) {
@@ -197,22 +185,33 @@ function RegisterContent() {
         firstName,
         lastName,
         referralCode: referralCode.trim(),
+        telegramHandle: telegramHandle.trim().replace(/^@/, ''),
+        signalHandle: signalHandle.trim().replace(/^@/, ''),
       });
 
       // Create ambassador_profiles + referral_codes for the new user
       if (user) {
         try {
-          await fetch('/api/setup-ambassador', {
+          const setupRes = await fetch('/api/setup-ambassador', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: user.id,
               referralCode: referralCode.trim(),
+              telegramHandle: telegramHandle.trim().replace(/^@/, ''),
+              signalHandle: signalHandle.trim().replace(/^@/, ''),
             }),
           });
+
+          if (!setupRes.ok) {
+            console.error('Setup ambassador returned', setupRes.status);
+            router.push('/ambassador?setup=incomplete');
+            return;
+          }
         } catch (setupErr) {
           console.error('Ambassador setup error:', setupErr);
-          // Don't block registration — profile can be set up later
+          router.push('/ambassador?setup=incomplete');
+          return;
         }
       }
 
@@ -229,6 +228,49 @@ function RegisterContent() {
         <div className="text-center">
           <div className="w-12 h-12 rounded-full border-4 border-secondary border-t-primary-container animate-spin mx-auto mb-4" />
           <p className="text-on-surface-variant">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Already logged in — show interstitial instead of blind redirect
+  if (isAuthenticated) {
+    const dashboardPath = role === 'admin' ? '/admin' : '/ambassador';
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="w-full max-w-md relative z-10">
+          <div className="text-center mb-8">
+            <Link href="/">
+              <h1 className="text-4xl font-black mb-2">
+                <span className="text-on-surface">Fame</span>
+                <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
+              </h1>
+            </Link>
+          </div>
+          <div className="bg-surface-container rounded-xl p-8 border border-outline-variant/10 text-center">
+            <h2 className="text-2xl font-bold text-on-surface mb-2">Already Signed In</h2>
+            <p className="text-on-surface-variant text-sm mb-6">
+              You are logged in as{' '}
+              <span className="font-semibold text-on-surface">{user?.email}</span>
+            </p>
+            <div className="space-y-3">
+              <button
+                onClick={() => router.push(dashboardPath)}
+                className="w-full px-4 py-3 bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold rounded-lg transition-all hover:opacity-90"
+              >
+                Go to Dashboard
+              </button>
+              <button
+                onClick={async () => {
+                  try { await signOut(); } catch (e) { console.error(e); }
+                }}
+                className="w-full px-4 py-3 border border-outline-variant/30 text-on-surface-variant rounded-lg hover:bg-surface-container-high transition-colors"
+              >
+                Sign out &amp; create new account
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -377,6 +419,44 @@ function RegisterContent() {
                 disabled={isLoading}
                 className="w-full px-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
               />
+            </div>
+
+            {/* Telegram & Signal Fields */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="telegramHandle" className="block text-sm font-medium text-on-surface-variant mb-2">
+                  Telegram <span className="text-error">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-sm">@</span>
+                  <input
+                    id="telegramHandle"
+                    type="text"
+                    value={telegramHandle}
+                    onChange={(e) => setTelegramHandle(e.target.value)}
+                    placeholder="username"
+                    disabled={isLoading}
+                    className="w-full pl-8 pr-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="signalHandle" className="block text-sm font-medium text-on-surface-variant mb-2">
+                  Signal <span className="text-error">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant/50 text-sm">@</span>
+                  <input
+                    id="signalHandle"
+                    type="text"
+                    value={signalHandle}
+                    onChange={(e) => setSignalHandle(e.target.value)}
+                    placeholder="username"
+                    disabled={isLoading}
+                    className="w-full pl-8 pr-4 py-3 bg-surface-container-high border border-outline-variant/20 rounded-lg text-on-surface placeholder-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary-container focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Password Field */}
@@ -538,7 +618,7 @@ function RegisterContent() {
 
         {/* Footer */}
         <div className="text-center mt-8 text-on-surface-variant/40 text-xs">
-          <p>FameBar OS &middot; Aureum Obsidian</p>
+          <p>FameClub &middot; Aureum Obsidian</p>
         </div>
       </div>
     </div>

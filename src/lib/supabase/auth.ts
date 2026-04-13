@@ -18,6 +18,8 @@ export interface SignUpData {
   firstName: string;
   lastName: string;
   referralCode: string;
+  telegramHandle: string;
+  signalHandle: string;
 }
 
 // ============================================================================
@@ -32,7 +34,7 @@ export interface SignUpData {
  * @throws Error if sign up fails
  */
 export async function signUpWithEmail(data: SignUpData) {
-  const { email, password, firstName, lastName, referralCode } = data;
+  const { email, password, firstName, lastName, referralCode, telegramHandle, signalHandle } = data;
   const supabase = createClient();
 
   // Create Supabase auth user with metadata — all sign-ups are ambassadors
@@ -44,6 +46,8 @@ export async function signUpWithEmail(data: SignUpData) {
         full_name: `${firstName} ${lastName}`,
         role: 'ambassador' as const,
         referral_code: referralCode,
+        telegram_handle: telegramHandle,
+        signal_handle: signalHandle,
       },
     },
   });

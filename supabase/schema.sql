@@ -13,6 +13,7 @@ create table public.profiles (
   avatar_url text,
   telegram_handle text,
   telegram_chat_id text,
+  signal_handle text,
   phone text,
   is_verified boolean default false,
   age_verified boolean default false,
@@ -233,12 +234,14 @@ create index idx_team_sponsor on public.team_nodes(sponsor_id);
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, email, full_name, role)
+  insert into public.profiles (id, email, full_name, role, telegram_handle, signal_handle)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'full_name', ''),
-    coalesce(new.raw_user_meta_data->>'role', 'buyer')
+    coalesce(new.raw_user_meta_data->>'role', 'buyer'),
+    new.raw_user_meta_data->>'telegram_handle',
+    new.raw_user_meta_data->>'signal_handle'
   );
   return new;
 end;

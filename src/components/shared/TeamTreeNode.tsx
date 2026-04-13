@@ -38,9 +38,9 @@ export default function TeamTreeNode({
       case 'active':
         return <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />;
       case 'stalled':
-        return <Clock className="h-3.5 w-3.5 text-amber-400" />;
+        return <Clock className="h-3.5 w-3.5 text-fuchsia-400" />;
       case 'new':
-        return <Users className="h-3.5 w-3.5 text-blue-400" />;
+        return <Users className="h-3.5 w-3.5 text-cyan-400" />;
       case 'at-risk':
         return <AlertCircle className="h-3.5 w-3.5 text-red-400" />;
       default:
@@ -53,9 +53,9 @@ export default function TeamTreeNode({
       case 'active':
         return 'text-emerald-400 bg-emerald-400/10';
       case 'stalled':
-        return 'text-amber-400 bg-amber-400/10';
+        return 'text-fuchsia-400 bg-fuchsia-400/10';
       case 'new':
-        return 'text-blue-400 bg-blue-400/10';
+        return 'text-cyan-400 bg-cyan-400/10';
       case 'at-risk':
         return 'text-red-400 bg-red-400/10';
       default:
@@ -108,7 +108,7 @@ export default function TeamTreeNode({
             </div>
             <div>
               <p className="text-xs text-gray-500">Recruits</p>
-              <p className="text-sm font-bold text-blue-400">{node.recruits}</p>
+              <p className="text-sm font-bold text-cyan-400">{node.recruits}</p>
             </div>
           </div>
         </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { PlusCircle, CheckCircle, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { createSafeClient } from '@/lib/supabase/safe-client';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -56,7 +56,7 @@ export default function RecordSalePage() {
     setAmbassadorInfo(null);
 
     try {
-      const supabase = createClient();
+      const supabase = createSafeClient();
       const { data, error } = await supabase
         .from('referral_codes')
         .select('id, code, ambassador_id, ambassador_profiles!referral_codes_ambassador_id_fkey(id, profiles!ambassador_profiles_id_fkey(full_name))')
