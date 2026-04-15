@@ -1,381 +1,702 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { PlusCircle, CheckCircle, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, Package2, Receipt, WalletCards, ShoppingBag, CheckCircle2 } from 'lucide-react';
 import { createSafeClient } from '@/lib/supabase/safe-client';
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
+type TabKey = 'approve' | 'sale' | 'remit' | 'wholesale';
 
-type PaymentMethod = 'cash' | 'zelle' | 'venmo';
-
-interface AmbassadorInfo {
+interface UserRow {
   id: string;
-  name: string;
-  code: string;
+  full_name: string | null;
+  email: string;
+  role: string;
+  age_verified: boolean;
 }
 
-interface SaleResult {
-  orderId: string;
-  total: number;
-  commissionsCreated: number;
-  tokensAwarded: number;
+interface PackRow {
+  id: string;
+  ambassador_id: string;
+  mode: 'consignment' | 'wholesale';
+  status: string;
+  outstanding_units: number;
+  remittance_balance: number;
+  units_sold: number;
+  approved_at: string;
 }
 
-// ============================================================================
-// RECORD SALE PAGE
-// ============================================================================
+interface BuyerRequestRow {
+  id: string;
+  referred_by: string | null;
+  total_orders: number;
+  requested_ambassador_at: string | null;
+  promoted_at: string | null;
+  profiles?: {
+    full_name: string | null;
+    email: string;
+    age_verified: boolean;
+    role: string;
+  };
+}
 
-export default function RecordSalePage() {
-  // Form state
-  const [ambassadorCode, setAmbassadorCode] = useState('');
-  const [ambassadorInfo, setAmbassadorInfo] = useState<AmbassadorInfo | null>(null);
-  const [codeError, setCodeError] = useState('');
-  const [codeLoading, setCodeLoading] = useState(false);
-  const [units, setUnits] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-  const [customerName, setCustomerName] = useState('');
-  const [notes, setNotes] = useState('');
+const tabs: Array<{ key: TabKey; label: string; icon: React.ElementType }> = [
+  { key: 'approve', label: 'Approve 50-Pack', icon: Package2 },
+  { key: 'sale', label: 'Record Consignment Sale', icon: ShoppingBag },
+  { key: 'remit', label: 'Record Remittance', icon: Receipt },
+  { key: 'wholesale', label: 'Record Wholesale Pack', icon: WalletCards },
+];
 
-  // Submission state
+function getUserLabel(user: UserRow) {
+  return user.full_name ? `${user.full_name} (${user.email})` : user.email;
+}
+
+export default function CommerceHubPage() {
+  const safe = useMemo(() => createSafeClient(), []);
+  const [tab, setTab] = useState<TabKey>('approve');
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [packs, setPacks] = useState<PackRow[]>([]);
+  const [buyerRequests, setBuyerRequests] = useState<BuyerRequestRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [result, setResult] = useState<SaleResult | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // ---- Ambassador code validation ----
-  const validateCode = useCallback(async (code: string) => {
-    if (!code.trim()) {
-      setAmbassadorInfo(null);
-      setCodeError('');
-      return;
-    }
+  const [approvalUserId, setApprovalUserId] = useState('');
+  const [approvalNotes, setApprovalNotes] = useState('');
 
-    setCodeLoading(true);
-    setCodeError('');
-    setAmbassadorInfo(null);
+  const [salePackId, setSalePackId] = useState('');
+  const [saleBuyerId, setSaleBuyerId] = useState('');
+  const [saleUnits, setSaleUnits] = useState(1);
+  const [salePaymentMethod, setSalePaymentMethod] = useState<'cash' | 'zelle' | 'venmo'>('cash');
+  const [saleAgeVerified, setSaleAgeVerified] = useState(false);
+  const [saleCustomerName, setSaleCustomerName] = useState('');
+  const [saleNotes, setSaleNotes] = useState('');
 
-    try {
-      const supabase = createSafeClient();
-      const { data, error } = await supabase
-        .from('referral_codes')
-        .select('id, code, ambassador_id, ambassador_profiles!referral_codes_ambassador_id_fkey(id, profiles!ambassador_profiles_id_fkey(full_name))')
-        .eq('code', code.toUpperCase())
-        .single();
+  const [remitPackId, setRemitPackId] = useState('');
+  const [remitAmount, setRemitAmount] = useState('');
+  const [remitMethod, setRemitMethod] = useState<'ach' | 'zelle' | 'wire'>('ach');
+  const [remitReference, setRemitReference] = useState('');
+  const [remitNotes, setRemitNotes] = useState('');
 
-      if (error || !data) {
-        setCodeError('Ambassador code not found');
-      } else {
-        const profile = (data as any).ambassador_profiles;
-        const name = profile?.profiles?.full_name || 'Ambassador';
-        setAmbassadorInfo({
-          id: data.ambassador_id,
-          name,
-          code: data.code,
-        });
-      }
-    } catch {
-      setCodeError('Failed to validate code');
-    } finally {
-      setCodeLoading(false);
-    }
-  }, []);
+  const [wholesaleUserId, setWholesaleUserId] = useState('');
+  const [wholesaleNotes, setWholesaleNotes] = useState('');
 
-  // ---- Submit sale ----
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const refreshData = useCallback(async () => {
+    setLoading(true);
+    const [userResult, packResult, buyerRequestResult] = await Promise.all([
+      safe
+        .from('profiles')
+        .select('id, full_name, email, role, age_verified')
+        .order('created_at', { ascending: false })
+        .limit(500),
+      safe
+        .from('ambassador_packs')
+        .select('id, ambassador_id, mode, status, outstanding_units, remittance_balance, units_sold, approved_at')
+        .order('approved_at', { ascending: false })
+        .limit(200),
+      safe
+        .from('buyer_profiles')
+        .select('id, referred_by, total_orders, requested_ambassador_at, promoted_at, profiles!buyer_profiles_id_fkey(full_name, email, age_verified, role)')
+        .order('requested_ambassador_at', { ascending: false })
+        .limit(200),
+    ]);
 
-    if (!ambassadorInfo) {
-      setCodeError('Please enter a valid ambassador code');
-      return;
-    }
+    setUsers((userResult.data || []) as UserRow[]);
+    setPacks((packResult.data || []) as PackRow[]);
+    setBuyerRequests((buyerRequestResult.data || []) as BuyerRequestRow[]);
+    setLoading(false);
+  }, [safe]);
 
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
+
+  const buyers = users.filter((user) => user.role === 'buyer');
+  const ambassadors = users.filter((user) => user.role === 'ambassador');
+  const buyerAndAmbassadorPool = users.filter((user) => user.role === 'buyer' || user.role === 'ambassador');
+  const usersById = new Map(users.map((user) => [user.id, user]));
+  const pendingReviewBuyers = buyerRequests.filter(
+    (buyer) => !!buyer.requested_ambassador_at && !buyer.promoted_at
+  );
+
+  const approvalPool = [...buyerAndAmbassadorPool].sort((left, right) => {
+    const leftRequested = pendingReviewBuyers.some((buyer) => buyer.id === left.id);
+    const rightRequested = pendingReviewBuyers.some((buyer) => buyer.id === right.id);
+    if (leftRequested === rightRequested) return 0;
+    return leftRequested ? -1 : 1;
+  });
+
+  const consignmentPacks = packs.filter((pack) => pack.mode === 'consignment');
+  const openSalePacks = consignmentPacks.filter((pack) => pack.outstanding_units > 0);
+  const remittancePacks = consignmentPacks.filter((pack) => Number(pack.remittance_balance || 0) > 0);
+
+  const handleRequest = async (url: string, body: Record<string, any>, successMessage: string) => {
     setSubmitting(true);
-    setSubmitError('');
+    setError(null);
+    setMessage(null);
 
     try {
-      const res = await fetch('/api/record-sale', {
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ambassadorCode: ambassadorCode.toUpperCase(),
-          units,
-          paymentMethod,
-          customerName: customerName || undefined,
-          notes: notes || undefined,
-        }),
+        body: JSON.stringify(body),
       });
-
       const data = await res.json();
-
       if (!res.ok || !data.success) {
-        setSubmitError(data.error || 'Failed to record sale');
-      } else {
-        setResult({
-          orderId: data.orderId,
-          total: data.total,
-          commissionsCreated: data.commissionsCreated,
-          tokensAwarded: data.tokensAwarded,
-        });
+        throw new Error(data.error || 'Request failed');
       }
-    } catch {
-      setSubmitError('Network error. Please try again.');
+      setMessage(successMessage);
+      await refreshData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setSubmitting(false);
     }
   };
 
-  // ---- Reset form ----
-  const resetForm = () => {
-    setAmbassadorCode('');
-    setAmbassadorInfo(null);
-    setCodeError('');
-    setUnits(1);
-    setPaymentMethod('cash');
-    setCustomerName('');
-    setNotes('');
-    setSubmitError('');
-    setResult(null);
+  const stats = {
+    buyersAwaitingReview: pendingReviewBuyers.length,
+    ambassadors: ambassadors.length,
+    openConsignment: openSalePacks.length,
+    remittanceDue: remittancePacks.reduce((sum, pack) => sum + Number(pack.remittance_balance || 0), 0),
   };
 
-  // ---- Calculations ----
-  const total = units * 25;
-  const directCommission = units * 6.25;
-  const tokensEstimate = units; // 1 token per unit baseline
-
-  // ---- Success State ----
-  if (result) {
-    return (
-      <div className="space-y-6 max-w-2xl">
-        <div className="flex items-center gap-3">
-          <CheckCircle className="h-8 w-8 text-secondary" />
-          <div>
-            <h1 className="text-3xl font-bold text-on-surface">Sale Recorded</h1>
-            <p className="text-gray-500">Order has been created and commissions triggered</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-secondary/10 border border-secondary/30 p-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Order ID</p>
-              <p className="font-mono text-sm text-on-surface mt-1">{result.orderId.slice(0, 13).toUpperCase()}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Total</p>
-              <p className="text-2xl font-bold text-secondary mt-1">${result.total.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Commissions Created</p>
-              <p className="text-lg font-semibold text-on-surface mt-1">{result.commissionsCreated}</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Tokens Awarded</p>
-              <p className="text-lg font-semibold text-on-surface mt-1">{result.tokensAwarded}</p>
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-secondary/20">
-            <p className="text-xs text-gray-500">Ambassador: {ambassadorInfo?.name} ({ambassadorCode.toUpperCase()})</p>
-            <p className="text-xs text-gray-500">Payment: {paymentMethod.charAt(0).toUpperCase() + paymentMethod.slice(1)}</p>
-            {customerName && <p className="text-xs text-gray-500">Customer: {customerName}</p>}
-          </div>
-        </div>
-
-        <button
-          onClick={resetForm}
-          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-primary-container to-primary text-on-primary font-semibold transition-all hover:opacity-90"
-        >
-          <RotateCcw className="h-4 w-4" />
-          Record Another Sale
-        </button>
-      </div>
-    );
-  }
-
-  // ---- Form State ----
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div className="flex items-center gap-3">
-        <PlusCircle className="h-8 w-8 text-primary-container" />
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-on-surface">Record Sale</h1>
-          <p className="text-gray-500">Manually record a cash, Zelle, or Venmo sale</p>
+          <h1 className="text-3xl font-bold text-on-surface">Commerce Hub</h1>
+          <p className="mt-1 text-on-surface-variant">
+            All buyer-to-ambassador triggers now live here: review buyer requests, approve 50-packs, record consignment activity, post remittances, and book wholesale pack purchases.
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Ambassador Code */}
-        <div className="rounded-xl bg-surface-container border border-outline-variant/20 p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Ambassador</h2>
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <StatCard label="Buyer Reviews" value={stats.buyersAwaitingReview} />
+        <StatCard label="Active Ambassadors" value={stats.ambassadors} />
+        <StatCard label="Open Consignment Packs" value={stats.openConsignment} />
+        <StatCard label="Remittance Due" value={`$${stats.remittanceDue.toFixed(2)}`} />
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium text-on-surface mb-2">
-              Ambassador Code <span className="text-error">*</span>
-            </label>
-            <input
-              type="text"
-              value={ambassadorCode}
-              onChange={(e) => setAmbassadorCode(e.target.value.toUpperCase())}
-              onBlur={() => validateCode(ambassadorCode)}
-              placeholder="e.g. FAME-JOHN"
-              className="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-4 py-3 text-on-surface placeholder-gray-600 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 uppercase"
-            />
-            {codeLoading && (
-              <div className="flex items-center gap-2 mt-2 text-gray-500 text-sm">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Validating...
-              </div>
-            )}
-            {codeError && (
-              <div className="flex items-center gap-2 mt-2 text-error text-sm">
-                <AlertCircle className="h-4 w-4" />
-                {codeError}
-              </div>
-            )}
-            {ambassadorInfo && (
-              <div className="flex items-center gap-2 mt-2 text-secondary text-sm">
-                <CheckCircle className="h-4 w-4" />
-                {ambassadorInfo.name}
-              </div>
-            )}
-          </div>
+      {message && (
+        <div className="rounded-xl border border-secondary/20 bg-secondary/10 px-4 py-3 text-sm text-secondary">
+          {message}
         </div>
-
-        {/* Sale Details */}
-        <div className="rounded-xl bg-surface-container border border-outline-variant/20 p-6 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Sale Details</h2>
-
-          {/* Units */}
-          <div>
-            <label className="block text-sm font-medium text-on-surface mb-2">
-              Units <span className="text-error">*</span>
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={100}
-              value={units}
-              onChange={(e) => setUnits(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-              className="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-4 py-3 text-on-surface focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-            <p className="text-xs text-gray-500 mt-1">$25 per unit</p>
-          </div>
-
-          {/* Payment Method */}
-          <div>
-            <label className="block text-sm font-medium text-on-surface mb-2">
-              Payment Method <span className="text-error">*</span>
-            </label>
-            <div className="flex gap-3">
-              {(['cash', 'zelle', 'venmo'] as PaymentMethod[]).map((method) => (
-                <label
-                  key={method}
-                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
-                    paymentMethod === method
-                      ? 'bg-primary-container/20 border-primary-container text-on-surface'
-                      : 'bg-surface-container-high border-outline-variant/20 text-gray-400 hover:text-on-surface-variant'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value={method}
-                    checked={paymentMethod === method}
-                    onChange={() => setPaymentMethod(method)}
-                    className="sr-only"
-                  />
-                  <span className="text-sm font-semibold capitalize">{method}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Customer Name */}
-          <div>
-            <label className="block text-sm font-medium text-on-surface mb-2">
-              Customer Name <span className="text-gray-500 text-xs">(optional)</span>
-            </label>
-            <input
-              type="text"
-              value={customerName}
-              onChange={(e) => setCustomerName(e.target.value)}
-              placeholder="Customer name"
-              className="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-4 py-3 text-on-surface placeholder-gray-600 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50"
-            />
-          </div>
-
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-on-surface mb-2">
-              Notes <span className="text-gray-500 text-xs">(optional)</span>
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Any additional notes..."
-              rows={3}
-              className="w-full bg-surface-container-high border border-outline-variant/20 rounded-lg px-4 py-3 text-on-surface placeholder-gray-600 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/50 resize-none"
-            />
-          </div>
+      )}
+      {error && (
+        <div className="rounded-xl border border-error/20 bg-error/10 px-4 py-3 text-sm text-error">
+          {error}
         </div>
+      )}
 
-        {/* Live Calculation Panel */}
-        <div className="rounded-xl bg-surface-container border border-outline-variant/20 p-6 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Sale Summary</h2>
+      <div className="flex flex-wrap gap-2 rounded-xl bg-surface-container p-2">
+        {tabs.map(({ key, label, icon: Icon }) => (
+          <button
+            key={key}
+            onClick={() => setTab(key)}
+            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
+              tab === key
+                ? 'bg-primary-container text-on-primary'
+                : 'text-on-surface-variant hover:bg-surface-container-high'
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-lg bg-surface-container-low p-4 text-center">
-              <p className="text-xs text-gray-500">Total</p>
-              <p className="text-2xl font-bold text-on-surface mt-1">
-                ${total.toFixed(2)}
-              </p>
-              <p className="text-[10px] text-gray-600 mt-0.5">{units} x $25</p>
+      <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="rounded-2xl border border-outline-variant/10 bg-surface-container p-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-6 w-6 animate-spin text-primary-container" />
             </div>
-            <div className="rounded-lg bg-surface-container-low p-4 text-center">
-              <p className="text-xs text-gray-500">Direct Commission</p>
-              <p className="text-2xl font-bold text-secondary mt-1">
-                ${directCommission.toFixed(2)}
-              </p>
-              <p className="text-[10px] text-gray-600 mt-0.5">{units} x $6.25</p>
-            </div>
-            <div className="rounded-lg bg-surface-container-low p-4 text-center">
-              <p className="text-xs text-gray-500">Tokens Earned</p>
-              <p className="text-2xl font-bold text-primary-fixed-dim mt-1">
-                ~{tokensEstimate}
-              </p>
-              <p className="text-[10px] text-gray-600 mt-0.5">estimated</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Error */}
-        {submitError && (
-          <div className="rounded-lg bg-error/10 border border-error/30 p-4 flex items-center gap-3">
-            <AlertCircle className="h-5 w-5 text-error flex-shrink-0" />
-            <p className="text-sm text-error">{submitError}</p>
-          </div>
-        )}
-
-        {/* Submit */}
-        <button
-          type="submit"
-          disabled={submitting || !ambassadorInfo}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-lg bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold text-lg transition-all hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              Recording...
-            </>
           ) : (
             <>
-              <PlusCircle className="h-5 w-5" />
-              Record Sale
+              {tab === 'approve' && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRequest(
+                      '/api/admin/approve-pack',
+                      { userId: approvalUserId, notes: approvalNotes },
+                      '50-pack approved and ambassador access updated.'
+                    );
+                  }}
+                >
+                  <SectionTitle
+                    title="Approve Consignment 50-Pack"
+                    description="This is the promotion trigger. Buyers are promoted to ambassador here and receive their primary referral code at approval time."
+                  />
+                  <SelectField
+                    label="Buyer or Ambassador"
+                    value={approvalUserId}
+                    onChange={setApprovalUserId}
+                    options={approvalPool.map((user) => {
+                      const requestedBuyer = pendingReviewBuyers.find((buyer) => buyer.id === user.id);
+                      return {
+                        value: user.id,
+                        label: `${getUserLabel(user)} · ${user.role}${requestedBuyer ? ' · review requested' : ''}${user.age_verified ? '' : ' · age verify needed'}`,
+                      };
+                    })}
+                  />
+                  {pendingReviewBuyers.length > 0 && (
+                    <p className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-primary">
+                      {pendingReviewBuyers.length} buyer review request{pendingReviewBuyers.length === 1 ? '' : 's'} currently waiting for a 50-pack decision.
+                    </p>
+                  )}
+                  <TextAreaField
+                    label="Approval Notes"
+                    value={approvalNotes}
+                    onChange={setApprovalNotes}
+                    placeholder="Approved for 50-unit consignment allocation."
+                  />
+                  <SubmitButton disabled={!approvalUserId || submitting} loading={submitting} label="Approve 50-Pack" />
+                </form>
+              )}
+
+              {tab === 'sale' && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRequest(
+                      '/api/admin/record-consignment-sale',
+                      {
+                        packId: salePackId,
+                        buyerId: saleBuyerId || null,
+                        units: saleUnits,
+                        paymentMethod: salePaymentMethod,
+                        ageVerified: saleAgeVerified,
+                        customerName: saleCustomerName,
+                        notes: saleNotes,
+                      },
+                      'Consignment sale recorded and linked to the selected pack.'
+                    );
+                  }}
+                >
+                  <SectionTitle
+                    title="Record Consignment Sale"
+                    description="Each sale increases the ambassador's retained cash by $6.25 per unit and raises remittance due by $18.75 per unit."
+                  />
+                  <SelectField
+                    label="Open Consignment Pack"
+                    value={salePackId}
+                    onChange={setSalePackId}
+                    options={openSalePacks.map((pack) => {
+                      const user = usersById.get(pack.ambassador_id);
+                      return {
+                        value: pack.id,
+                        label: `${user ? getUserLabel(user) : pack.ambassador_id} · ${pack.outstanding_units} units left · ${pack.status}`,
+                      };
+                    })}
+                  />
+                  <SelectField
+                    label="Buyer Account (optional)"
+                    value={saleBuyerId}
+                    onChange={setSaleBuyerId}
+                    allowEmpty
+                    options={buyers.map((user) => ({
+                      value: user.id,
+                      label: getUserLabel(user),
+                    }))}
+                  />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <NumberField label="Units" value={saleUnits} onChange={setSaleUnits} min={1} max={50} />
+                    <SelectField
+                      label="Payment Method"
+                      value={salePaymentMethod}
+                      onChange={(value) => setSalePaymentMethod(value as 'cash' | 'zelle' | 'venmo')}
+                      options={[
+                        { value: 'cash', label: 'Cash' },
+                        { value: 'zelle', label: 'Zelle' },
+                        { value: 'venmo', label: 'Venmo' },
+                      ]}
+                    />
+                  </div>
+                  <TextField
+                    label="Customer Name (optional)"
+                    value={saleCustomerName}
+                    onChange={setSaleCustomerName}
+                    placeholder="Party, event, or customer name"
+                  />
+                  <label className="flex items-start gap-3 rounded-lg border border-outline-variant/20 bg-surface-container-high px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={saleAgeVerified}
+                      onChange={(e) => setSaleAgeVerified(e.target.checked)}
+                      className="mt-1 h-4 w-4"
+                    />
+                    <span className="text-sm text-on-surface">
+                      I confirm this sale was age-verified for 21+ compliance before it was recorded.
+                    </span>
+                  </label>
+                  <TextAreaField
+                    label="Sale Notes"
+                    value={saleNotes}
+                    onChange={setSaleNotes}
+                    placeholder="Dorm activation, event sale, private order, etc."
+                  />
+                  <SubmitButton
+                    disabled={!salePackId || !saleAgeVerified || submitting}
+                    loading={submitting}
+                    label="Record Sale"
+                  />
+                </form>
+              )}
+
+              {tab === 'remit' && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRequest(
+                      '/api/admin/record-remittance',
+                      {
+                        packId: remitPackId,
+                        amount: remitAmount,
+                        method: remitMethod,
+                        reference: remitReference,
+                        notes: remitNotes,
+                      },
+                      'Remittance posted against the selected pack.'
+                    );
+                  }}
+                >
+                  <SectionTitle
+                    title="Record Remittance"
+                    description="Use this whenever a consignment ambassador sends the treasury portion back for sold units."
+                  />
+                  <SelectField
+                    label="Pack With Balance Due"
+                    value={remitPackId}
+                    onChange={setRemitPackId}
+                    options={remittancePacks.map((pack) => {
+                      const user = usersById.get(pack.ambassador_id);
+                      return {
+                        value: pack.id,
+                        label: `${user ? getUserLabel(user) : pack.ambassador_id} · $${Number(pack.remittance_balance).toFixed(2)} due`,
+                      };
+                    })}
+                  />
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <TextField
+                      label="Amount"
+                      value={remitAmount}
+                      onChange={setRemitAmount}
+                      placeholder="937.50"
+                    />
+                    <SelectField
+                      label="Method"
+                      value={remitMethod}
+                      onChange={(value) => setRemitMethod(value as 'ach' | 'zelle' | 'wire')}
+                      options={[
+                        { value: 'ach', label: 'ACH' },
+                        { value: 'zelle', label: 'Zelle' },
+                        { value: 'wire', label: 'Wire' },
+                      ]}
+                    />
+                  </div>
+                  <TextField
+                    label="Reference"
+                    value={remitReference}
+                    onChange={setRemitReference}
+                    placeholder="ACH trace, Zelle note, wire reference"
+                  />
+                  <TextAreaField
+                    label="Remittance Notes"
+                    value={remitNotes}
+                    onChange={setRemitNotes}
+                    placeholder="Settlement for sold party inventory."
+                  />
+                  <SubmitButton disabled={!remitPackId || !remitAmount || submitting} loading={submitting} label="Post Remittance" />
+                </form>
+              )}
+
+              {tab === 'wholesale' && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRequest(
+                      '/api/admin/record-wholesale-pack',
+                      { userId: wholesaleUserId, notes: wholesaleNotes },
+                      'Wholesale 50-pack purchase recorded and upline commissions triggered.'
+                    );
+                  }}
+                >
+                  <SectionTitle
+                    title="Record Wholesale 50-Pack Purchase"
+                    description="Books the $937.50 wholesale purchase, records the pack, and routes the $312.50 upline-only commission base without double-counting the ambassador's resale margin."
+                  />
+                  <SelectField
+                    label="Buyer or Ambassador"
+                    value={wholesaleUserId}
+                    onChange={setWholesaleUserId}
+                    options={buyerAndAmbassadorPool.map((user) => ({
+                      value: user.id,
+                      label: `${getUserLabel(user)} · ${user.role}`,
+                    }))}
+                  />
+                  <TextAreaField
+                    label="Wholesale Notes"
+                    value={wholesaleNotes}
+                    onChange={setWholesaleNotes}
+                    placeholder="Wholesale 50-pack paid in full and released."
+                  />
+                  <SubmitButton disabled={!wholesaleUserId || submitting} loading={submitting} label="Record Wholesale Pack" />
+                </form>
+              )}
             </>
           )}
-        </button>
-      </form>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-outline-variant/10 bg-surface-container p-6">
+            <SectionTitle
+              title="Buyer Review Queue"
+              description="Buyers who explicitly asked for ambassador review appear here first so admin approvals are operationally visible."
+            />
+            <div className="mt-4 space-y-3">
+              {pendingReviewBuyers.length > 0 ? (
+                pendingReviewBuyers.slice(0, 6).map((buyer) => {
+                  const sponsor = buyer.referred_by ? usersById.get(buyer.referred_by) : null;
+                  return (
+                    <div key={buyer.id} className="rounded-xl bg-surface-container-high p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-on-surface">
+                            {buyer.profiles?.full_name || buyer.profiles?.email || buyer.id}
+                          </p>
+                          <p className="mt-1 text-xs uppercase tracking-wider text-on-surface-variant">
+                            {buyer.total_orders} retail order{buyer.total_orders === 1 ? '' : 's'} · {buyer.profiles?.age_verified ? 'age verified' : 'age verification needed'}
+                          </p>
+                          {sponsor && (
+                            <p className="mt-2 text-xs text-on-surface-variant">
+                              Sponsor: <span className="font-semibold text-on-surface">{getUserLabel(sponsor)}</span>
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => {
+                            setTab('approve');
+                            setApprovalUserId(buyer.id);
+                          }}
+                          className="rounded-lg bg-primary-container px-3 py-2 text-xs font-semibold text-on-primary"
+                        >
+                          Load for Approval
+                        </button>
+                      </div>
+                      <p className="mt-3 text-xs text-on-surface-variant">
+                        Requested {new Date(buyer.requested_ambassador_at || '').toLocaleString()}
+                      </p>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant">
+                  No buyers are currently waiting for ambassador review.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-outline-variant/10 bg-surface-container p-6">
+            <SectionTitle
+              title="Recent Pack Activity"
+              description="A quick operational snapshot so the next triggering event is always visible."
+            />
+            <div className="mt-4 space-y-3">
+              {packs.slice(0, 8).map((pack) => {
+                const user = usersById.get(pack.ambassador_id);
+                return (
+                  <div key={pack.id} className="rounded-xl bg-surface-container-high p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-on-surface">
+                          {user ? getUserLabel(user) : pack.ambassador_id}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-wider text-on-surface-variant">
+                          {pack.mode} · {pack.status}
+                        </p>
+                      </div>
+                      <div className="text-right text-xs text-on-surface-variant">
+                        <p>{new Date(pack.approved_at).toLocaleDateString()}</p>
+                        {pack.mode === 'consignment' ? (
+                          <p>${Number(pack.remittance_balance || 0).toFixed(2)} due</p>
+                        ) : (
+                          <p>{pack.outstanding_units} units in stock</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 text-xs text-on-surface-variant">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-primary-container" />
+                      <span>{pack.outstanding_units} units remaining, {pack.units_sold} sold</span>
+                    </div>
+                  </div>
+                );
+              })}
+              {packs.length === 0 && (
+                <p className="rounded-xl bg-surface-container-high p-4 text-sm text-on-surface-variant">
+                  No 50-pack activity yet.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-xl border border-outline-variant/10 bg-surface-container p-4">
+      <p className="text-xs uppercase tracking-widest text-on-surface-variant">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-on-surface">{value}</p>
+    </div>
+  );
+}
+
+function SectionTitle({ title, description }: { title: string; description: string }) {
+  return (
+    <div>
+      <h2 className="text-xl font-bold text-on-surface">{title}</h2>
+      <p className="mt-1 text-sm text-on-surface-variant">{description}</p>
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  allowEmpty = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+  allowEmpty?: boolean;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-on-surface">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-4 py-3 text-on-surface"
+      >
+        <option value="">{allowEmpty ? 'Optional' : 'Select an option'}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-on-surface">{label}</span>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-4 py-3 text-on-surface"
+      />
+    </label>
+  );
+}
+
+function NumberField({
+  label,
+  value,
+  onChange,
+  min,
+  max,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  min: number;
+  max: number;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-on-surface">{label}</span>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Math.min(max, Number(e.target.value) || min)))}
+        className="w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-4 py-3 text-on-surface"
+      />
+    </label>
+  );
+}
+
+function TextAreaField({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block space-y-2">
+      <span className="text-sm font-medium text-on-surface">{label}</span>
+      <textarea
+        rows={4}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-lg border border-outline-variant/20 bg-surface-container-high px-4 py-3 text-on-surface"
+      />
+    </label>
+  );
+}
+
+function SubmitButton({
+  disabled,
+  loading,
+  label,
+}: {
+  disabled: boolean;
+  loading: boolean;
+  label: string;
+}) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled}
+      className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary-container to-primary px-5 py-3 text-sm font-semibold text-on-primary disabled:opacity-50"
+    >
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      {loading ? 'Processing...' : label}
+    </button>
   );
 }

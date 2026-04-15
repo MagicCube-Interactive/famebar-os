@@ -6,7 +6,8 @@
  */
 
 import { createClient } from './client';
-import type { UserRole, AmbassadorProfile } from '@/types';
+import type { AmbassadorProfile } from '@/types';
+import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -20,6 +21,7 @@ export interface SignUpData {
   referralCode: string;
   telegramHandle: string;
   signalHandle: string;
+  ageVerified: boolean;
 }
 
 // ============================================================================
@@ -34,20 +36,30 @@ export interface SignUpData {
  * @throws Error if sign up fails
  */
 export async function signUpWithEmail(data: SignUpData) {
-  const { email, password, firstName, lastName, referralCode, telegramHandle, signalHandle } = data;
+  const {
+    email,
+    password,
+    firstName,
+    lastName,
+    referralCode,
+    telegramHandle,
+    signalHandle,
+    ageVerified,
+  } = data;
   const supabase = createClient();
 
-  // Create Supabase auth user with metadata — all sign-ups are ambassadors
+  // Create Supabase auth user with metadata — invited signups start as buyers.
   const { data: authData, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: `${firstName} ${lastName}`,
-        role: 'ambassador' as const,
+        role: 'buyer' as const,
         referral_code: referralCode,
         telegram_handle: telegramHandle,
         signal_handle: signalHandle,
+        age_verified: ageVerified,
       },
     },
   });
@@ -128,13 +140,13 @@ export async function getCurrentUser() {
  * @returns Unsubscribe function
  */
 export function onAuthStateChange(
-  callback: (user: any | null) => void
+  callback: (user: User | null) => void
 ) {
   const supabase = createClient();
 
   const {
     data: { subscription },
-  } = supabase.auth.onAuthStateChange((event, session) => {
+  } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
     callback(session?.user ?? null);
   });
 

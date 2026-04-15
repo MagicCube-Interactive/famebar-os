@@ -1,7 +1,7 @@
 /**
  * Next.js Middleware for Route Protection with Supabase
  *
- * Two-role system: admin + ambassador
+ * Role-based protection for buyer, ambassador, and admin portals.
  * Protects routes based on authentication and role
  */
 
@@ -20,6 +20,12 @@ const ROUTE_CONFIG: Record<string, RouteConfig> = {
   '/login': { requiredRoles: [], public: true },
   '/register': { requiredRoles: [], public: true },
   '/public': { requiredRoles: [], public: true },
+  '/terms': { requiredRoles: [], public: true },
+  '/privacy': { requiredRoles: [], public: true },
+  '/help': { requiredRoles: [], public: true },
+
+  // Buyer routes
+  '/buyer': { requiredRoles: ['buyer', 'ambassador', 'admin'] },
 
   // Ambassador routes
   '/ambassador': { requiredRoles: ['ambassador', 'admin'] },
@@ -51,6 +57,7 @@ const ROUTE_CONFIG: Record<string, RouteConfig> = {
 };
 
 const ROLE_DASHBOARD_PATHS: Record<string, string> = {
+  buyer: '/buyer',
   ambassador: '/ambassador',
   admin: '/admin',
 };
@@ -69,8 +76,8 @@ function getRouteConfig(path: string): RouteConfig | null {
     }
   }
 
-  // Default: ambassador + admin access
-  return { requiredRoles: ['ambassador', 'admin'] };
+  // Default: authenticated buyer-level access
+  return { requiredRoles: ['buyer', 'ambassador', 'admin'] };
 }
 
 function canAccessRoute(userRole: string, path: string): boolean {
@@ -115,17 +122,17 @@ export async function middleware(request: NextRequest) {
       .single();
 
     if (error || !profile) {
-      const userRole = 'ambassador';
+      const userRole = 'buyer';
       if (!canAccessRoute(userRole, pathname)) {
-        return NextResponse.redirect(new URL('/ambassador', request.url));
+        return NextResponse.redirect(new URL('/buyer', request.url));
       }
       return response;
     }
 
-    const userRole = profile.role || 'ambassador';
+    const userRole = profile.role || 'buyer';
 
     if (!canAccessRoute(userRole, pathname)) {
-      const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/ambassador';
+      const dashboardPath = ROLE_DASHBOARD_PATHS[userRole] || '/buyer';
       return NextResponse.redirect(new URL(dashboardPath, request.url));
     }
 

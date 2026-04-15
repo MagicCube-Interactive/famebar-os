@@ -23,7 +23,7 @@ import {
 
 const navItems = [
   { label: 'Overview', href: '/admin', icon: Home },
-  { label: 'Record Sale', href: '/admin/record-sale', icon: PlusCircle },
+  { label: 'Commerce Hub', href: '/admin/record-sale', icon: PlusCircle },
   { label: 'Users', href: '/admin/users', icon: Users },
   { label: 'Ambassadors', href: '/admin/ambassadors', icon: Users },
   { label: 'Orders', href: '/admin/orders', icon: ShoppingCart },
@@ -61,9 +61,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
+          <Link
+            href="/admin/orders"
+            className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors"
+            aria-label="Open admin alerts"
+          >
             <Bell className="h-5 w-5" />
-          </button>
+          </Link>
           <div className="w-8 h-8 rounded bg-surface-container-highest border border-outline-variant/20 flex items-center justify-center text-on-surface font-bold text-sm">
             A
           </div>
@@ -97,10 +101,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </nav>
         <div className="mt-auto px-4 space-y-1">
-          <div className="flex items-center gap-3 text-gray-400 py-3 px-4 cursor-pointer hover:text-on-surface transition-all">
+          <Link href="/help" className="flex items-center gap-3 text-gray-400 py-3 px-4 hover:text-on-surface transition-all">
             <HelpCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Help Center</span>
-          </div>
+          </Link>
           <button onClick={handleSignOut} className="w-full mt-4 py-2 px-4 rounded bg-surface-container-highest text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors border border-outline-variant/10">
             Sign Out
           </button>

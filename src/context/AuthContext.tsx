@@ -1,7 +1,7 @@
 /**
  * Authentication Context Provider
  *
- * Two-role system: admin + ambassador
+ * Role-aware auth provider for buyer, ambassador, and admin accounts.
  * Provides global auth state to the entire application
  */
 
@@ -18,10 +18,12 @@ export interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isBuyer: boolean;
   isAmbassador: boolean;
   isAdmin: boolean;
   error: string | null;
   clearError: () => void;
+  refreshProfile: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -30,10 +32,12 @@ export const AuthContext = createContext<AuthContextType>({
   role: null,
   loading: true,
   isAuthenticated: false,
+  isBuyer: false,
   isAmbassador: false,
   isAdmin: false,
   error: null,
   clearError: () => {},
+  refreshProfile: async () => {},
 });
 
 export interface AuthProviderProps {
@@ -51,6 +55,42 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
   }, []);
 
+  const syncProfile = useCallback(async (supabaseUser: SupabaseUser | null) => {
+    if (!supabaseUser) {
+      setUser(null);
+      setUserProfile(null);
+      setRole(null);
+      return;
+    }
+
+    setUser(supabaseUser);
+    try {
+      const profile = await getUserProfile(supabaseUser.id);
+      setUserProfile(profile);
+      if (profile) {
+        setRole((profile.role || 'buyer') as UserRole);
+      } else {
+        setRole('buyer');
+      }
+    } catch (profileError) {
+      console.error('Error fetching user profile:', profileError);
+      setRole('buyer');
+    }
+  }, []);
+
+  const refreshProfile = useCallback(async () => {
+    if (!user) {
+      return;
+    }
+
+    try {
+      await syncProfile(user);
+    } catch (err) {
+      console.error('Error refreshing profile:', err);
+      setError(err instanceof Error ? err.message : 'Failed to refresh profile');
+    }
+  }, [syncProfile, user]);
+
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
 
@@ -58,26 +98,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         unsubscribe = onAuthStateChange(async (supabaseUser) => {
           try {
-            if (supabaseUser) {
-              setUser(supabaseUser);
-              try {
-                const profile = await getUserProfile(supabaseUser.id);
-                setUserProfile(profile);
-                if (profile) {
-                  const userRole = (profile.role || 'ambassador') as UserRole;
-                  setRole(userRole);
-                } else {
-                  setRole('ambassador');
-                }
-              } catch (profileError) {
-                console.error('Error fetching user profile:', profileError);
-                setRole('ambassador');
-              }
-            } else {
-              setUser(null);
-              setUserProfile(null);
-              setRole(null);
-            }
+            await syncProfile(supabaseUser);
           } catch (err) {
             console.error('Error in auth state change handler:', err);
             setError(err instanceof Error ? err.message : 'Authentication error occurred');
@@ -94,15 +115,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     initializeAuth();
     return () => { if (unsubscribe) unsubscribe(); };
-  }, []);
+  }, [syncProfile]);
 
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    const handleFocus = () => {
+      refreshProfile();
+    };
+
+    const interval = window.setInterval(() => {
+      refreshProfile();
+    }, 30000);
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [refreshProfile, user]);
+
+  const isBuyer = role === 'buyer';
   const isAmbassador = role === 'ambassador';
   const isAdmin = role === 'admin';
   const isAuthenticated = user !== null && role !== null;
 
   const value: AuthContextType = {
     user, userProfile, role, loading, isAuthenticated,
-    isAmbassador, isAdmin, error, clearError,
+    isBuyer, isAmbassador, isAdmin, error, clearError,
+    refreshProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

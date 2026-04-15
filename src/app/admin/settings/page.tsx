@@ -40,13 +40,16 @@ export default function SettingsPage() {
           return (
             <div
               key={idx}
-              className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 hover:bg-gray-800/50 cursor-pointer transition-colors"
+              className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6 opacity-75"
             >
               <div className="flex items-start gap-4">
                 <Icon className="h-6 w-6 text-fuchsia-400 flex-shrink-0 mt-1" />
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-100 mb-1">{setting.title}</h3>
                   <p className="text-sm text-gray-400">{setting.description}</p>
+                  <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Read-only until settings mutations are scoped and audited
+                  </p>
                 </div>
               </div>
             </div>

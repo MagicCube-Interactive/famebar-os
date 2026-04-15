@@ -84,9 +84,13 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
           <span className="text-lg font-bold tracking-tight text-on-surface">FameClub</span>
         </div>
         <div className="flex items-center gap-4">
-          <button className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors">
+          <Link
+            href="/ambassador/events"
+            className="p-2 text-on-surface hover:bg-surface-container rounded-full transition-colors"
+            aria-label="Open ambassador alerts"
+          >
             <Bell className="h-5 w-5" />
-          </button>
+          </Link>
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center text-on-primary font-bold text-sm">
             {ambassador.full_name?.[0] || ambassador.firstName?.[0] || 'A'}
           </div>
@@ -120,10 +124,10 @@ export default function AmbassadorLayout({ children }: { children: React.ReactNo
           })}
         </nav>
         <div className="mt-auto px-4 space-y-4">
-          <div className="flex items-center gap-3 text-gray-400 py-3 px-4 cursor-pointer hover:text-on-surface transition-all">
+          <Link href="/help" className="flex items-center gap-3 text-gray-400 py-3 px-4 hover:text-on-surface transition-all">
             <HelpCircle className="h-5 w-5" />
             <span className="text-sm font-medium">Help Center</span>
-          </div>
+          </Link>
           <button onClick={handleSignOut} className="w-full py-3 px-4 bg-surface-container-high rounded-lg text-sm font-bold text-on-surface hover:bg-surface-variant transition-colors">
             Sign Out
           </button>

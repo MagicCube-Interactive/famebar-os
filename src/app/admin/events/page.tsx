@@ -1,30 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Calendar, MapPin, Users } from 'lucide-react';
+import { Calendar, Lock } from 'lucide-react';
 
 export default function EventsPage() {
-  const events = [
-    {
-      id: '1',
-      name: 'Q2 Leadership Summit',
-      date: '2024-04-20',
-      location: 'San Francisco, CA',
-      type: 'hybrid',
-      rsvps: 45,
-      capacity: 100,
-    },
-    {
-      id: '2',
-      name: 'Campus Activation Tour',
-      date: '2024-04-25',
-      location: 'UC Berkeley',
-      type: 'offline',
-      rsvps: 82,
-      capacity: 150,
-    },
-  ];
-
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -32,46 +11,21 @@ export default function EventsPage() {
         <p className="text-gray-400">Manage platform events and track attendance</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {events.map((event) => (
-          <div
-            key={event.id}
-            className="rounded-lg border border-gray-700/50 bg-gray-800/30 p-6"
-          >
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-100">{event.name}</h3>
-              <span className="text-xs rounded-full bg-cyan-500/20 px-2.5 py-1 text-cyan-300">
-                {event.type.charAt(0).toUpperCase() + event.type.slice(1)}
-              </span>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Calendar className="h-4 w-4" />
-                {event.date}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <MapPin className="h-4 w-4" />
-                {event.location}
-              </div>
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <Users className="h-4 w-4" />
-                {event.rsvps} / {event.capacity} attendees
-              </div>
-            </div>
-
-            <div className="mb-3 h-2 bg-gray-700/50 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-cyan-500"
-                style={{ width: `${(event.rsvps / event.capacity) * 100}%` }}
-              />
-            </div>
-
-            <button className="w-full rounded-lg bg-fuchsia-500/20 py-2 text-sm font-medium text-fuchsia-300 hover:bg-fuchsia-500/30 transition-colors">
-              Manage Event
-            </button>
-          </div>
-        ))}
+      <div className="rounded-xl border border-gray-700/50 bg-gray-800/30 p-8 text-center">
+        <Calendar className="mx-auto mb-4 h-12 w-12 text-gray-500" />
+        <h2 className="text-lg font-semibold text-gray-100">Event management is intentionally disabled</h2>
+        <p className="mx-auto mt-2 max-w-2xl text-sm text-gray-400">
+          No live RSVP, capacity, host, or attendance workflows are defined yet, so demo event cards have been removed.
+          This keeps operators from treating sample events as real activations.
+        </p>
+        <button
+          type="button"
+          disabled
+          className="mt-6 inline-flex cursor-not-allowed items-center gap-2 rounded-lg bg-fuchsia-500/20 px-4 py-2 text-sm font-semibold text-fuchsia-300 opacity-60"
+        >
+          <Lock className="h-4 w-4" />
+          Pending Event Product Rules
+        </button>
       </div>
     </div>
   );

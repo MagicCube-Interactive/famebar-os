@@ -223,6 +223,62 @@ export function calculateCommissionChain(
 }
 
 /**
+ * Calculate upline-only commissions for a wholesale 50-pack purchase.
+ *
+ * The buying ambassador realizes their own direct margin through resale and
+ * therefore should not receive a duplicate Tier 0 commission event.
+ * Instead, only the upline (tiers 1-6) receives payout, calculated against
+ * the retail value of the approved pack.
+ */
+export function calculateWholesalePackCommissionChain(
+  orderId: string,
+  commissionBaseTotal: number,
+  buyingAmbassadorId: string,
+  teamTree: TeamTree,
+): CommissionEvent[] {
+  const events: CommissionEvent[] = [];
+  const now = new Date().toISOString();
+
+  if (!buyingAmbassadorId || !teamTree[buyingAmbassadorId] || commissionBaseTotal <= 0) {
+    return events;
+  }
+
+  const buyingNode = teamTree[buyingAmbassadorId];
+
+  for (let tierIndex = 1; tierIndex <= 6 && tierIndex < buyingNode.path.length; tierIndex++) {
+    const sponsorId = buyingNode.path[tierIndex];
+    const sponsorNode = teamTree[sponsorId];
+
+    if (!sponsorNode) {
+      continue;
+    }
+
+    const currentTier = tierIndex as AmbassadorRank;
+    if (
+      requiresActiveStatus(currentTier) &&
+      !isAmbassadorActive(sponsorNode.personalSalesThisMonth, currentTier)
+    ) {
+      continue;
+    }
+
+    const tierAmount = calculateTierCommission(commissionBaseTotal, currentTier);
+    events.push({
+      commissionId: crypto.randomUUID(),
+      orderId,
+      ambassadorId: sponsorId,
+      tier: currentTier,
+      rate: COMMISSION_TIER_CONFIG[currentTier],
+      amount: Math.round(tierAmount * 100) / 100,
+      status: 'pending',
+      sourceAmbassadorId: buyingAmbassadorId,
+      createdAt: now,
+    });
+  }
+
+  return events;
+}
+
+/**
  * Validate a complete commission chain
  *
  * Ensures that:

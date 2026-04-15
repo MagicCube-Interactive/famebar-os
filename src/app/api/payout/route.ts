@@ -8,7 +8,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { AccessError, requireAdminActor } from '@/lib/server/auth-guards';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -35,6 +35,7 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<PayoutResponse>> {
   try {
+    const { supabase } = await requireAdminActor();
     const body = (await request.json()) as PayoutRequest;
     const { commissionIds, payoutMethod, paymentReference } = body;
 
@@ -60,8 +61,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const supabase = createAdminClient();
 
     // ---- Fetch commissions to validate they exist and are available ----
     const { data: commissions, error: fetchError } = await supabase
@@ -125,6 +124,15 @@ export async function POST(
       totalAmount,
     });
   } catch (error) {
+    if (error instanceof AccessError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message,
+        },
+        { status: error.status }
+      );
+    }
     console.error('Payout error:', error);
     return NextResponse.json(
       {

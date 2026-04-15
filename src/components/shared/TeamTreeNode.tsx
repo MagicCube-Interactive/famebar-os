@@ -19,6 +19,7 @@ interface TeamTreeNodeProps {
   level: number;
   isExpanded: boolean;
   onToggle: (nodeId: string) => void;
+  expandedNodes?: Record<string, boolean>;
 }
 
 /**
@@ -30,6 +31,7 @@ export default function TeamTreeNode({
   level,
   isExpanded,
   onToggle,
+  expandedNodes,
 }: TeamTreeNodeProps) {
   const hasChildren = node.children.length > 0;
 
@@ -122,8 +124,9 @@ export default function TeamTreeNode({
               <TeamTreeNode
                 node={child}
                 level={level + 1}
-                isExpanded={true}
+                isExpanded={expandedNodes?.[child.id] ?? false}
                 onToggle={onToggle}
+                expandedNodes={expandedNodes}
               />
             </div>
           ))}

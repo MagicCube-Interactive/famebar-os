@@ -1,5 +1,5 @@
 /**
- * useRole Hook — Two-role system (admin + ambassador)
+ * useRole Hook — buyer, ambassador, and admin route access.
  */
 
 'use client';
@@ -14,9 +14,15 @@ export interface RoleConfig {
 }
 
 const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
+  buyer: {
+    dashboardPath: '/buyer',
+    availableRoutes: ['/buyer'],
+    canAccess: (path: string) => path.startsWith('/buyer'),
+  },
   ambassador: {
     dashboardPath: '/ambassador',
     availableRoutes: [
+      '/buyer',
       '/ambassador',
       '/ambassador/share',
       '/ambassador/earnings',
@@ -34,6 +40,7 @@ const ROLE_ROUTES: Record<UserRole, RoleConfig> = {
   admin: {
     dashboardPath: '/admin',
     availableRoutes: [
+      '/buyer',
       '/admin',
       '/admin/users',
       '/admin/ambassadors',

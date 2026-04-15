@@ -131,8 +131,13 @@ export default function TeamHeatmap({ data }: TeamHeatmapProps) {
                   </div>
                 </div>
 
-                <button className="mt-2 w-full rounded-lg bg-gray-700/50 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-700 transition-colors">
-                  View Profile
+                <button
+                  type="button"
+                  disabled
+                  title="Individual downline profile pages are not defined yet."
+                  className="mt-2 w-full cursor-not-allowed rounded-lg bg-gray-700/30 py-1.5 text-xs font-medium text-gray-500"
+                >
+                  Profile Detail Pending
                 </button>
               </div>
             )}

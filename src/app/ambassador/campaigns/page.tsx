@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';
 import { canViewAmbassadorPages } from '@/types';
-import { Megaphone, TrendingUp, Users, Zap } from 'lucide-react';
 
 export default function CampaignsPage() {
   const { userProfile } = useAuthContext();
@@ -122,16 +122,16 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                <button className="w-full rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/10 px-4 py-2.5 text-sm font-semibold text-fuchsia-300 transition-all duration-200 hover:bg-fuchsia-500/20">
-                  View Campaign Code
-                </button>
+                <Link href="/ambassador/share" className="block w-full rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/10 px-4 py-2.5 text-center text-sm font-semibold text-fuchsia-300 transition-all duration-200 hover:bg-fuchsia-500/20">
+                  Open Share Hub
+                </Link>
               </>
             )}
 
             {campaign.status === 'planning' && (
-              <button className="w-full rounded-lg border border-gray-600 bg-gray-700/30 px-4 py-2.5 text-sm font-semibold text-gray-300 transition-all duration-200 hover:bg-gray-600/30">
-                Get Notified When Live
-              </button>
+              <Link href="/ambassador/events" className="block w-full rounded-lg border border-gray-600 bg-gray-700/30 px-4 py-2.5 text-center text-sm font-semibold text-gray-300 transition-all duration-200 hover:bg-gray-600/30">
+                Track Launch Updates
+              </Link>
             )}
           </div>
         ))}
@@ -147,6 +147,9 @@ export default function CampaignsPage() {
           <li>✓ Check campaign metrics weekly to optimize your strategy</li>
           <li>✓ Top performers get featured in the ambassador spotlight</li>
         </ul>
+        <p className="mt-4 text-xs text-cyan-200/80">
+          Campaign-specific codes are not live yet, so active campaigns currently route you back to your main Share Hub.
+        </p>
       </div>
     </div>
   );

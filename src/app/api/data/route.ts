@@ -10,8 +10,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createAdminClient, createServiceClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
 
 interface DataRequest {
   table: string;
@@ -25,16 +27,71 @@ interface DataRequest {
 const ALLOWED_TABLES = [
   'profiles',
   'ambassador_profiles',
+  'buyer_profiles',
   'commission_events',
   'token_events',
   'orders',
   'referral_codes',
+  'ambassador_packs',
+  'pack_sale_events',
+  'pack_remittances',
 ];
+
+function hasFilter(
+  filters: Array<{ column: string; op: string; value: any }>,
+  column: string,
+  value: any
+) {
+  return filters.some((filter) => filter.column === column && filter.op === 'eq' && filter.value === value);
+}
+
+async function canQueryTableForUser({
+  table,
+  filters,
+  userId,
+  adminClient,
+}: {
+  table: string;
+  filters: Array<{ column: string; op: string; value: any }>;
+  userId: string;
+  adminClient: any;
+}) {
+  switch (table) {
+    case 'profiles':
+    case 'buyer_profiles':
+      return hasFilter(filters, 'id', userId);
+    case 'ambassador_profiles': {
+      if (hasFilter(filters, 'id', userId) || hasFilter(filters, 'sponsor_id', userId)) {
+        return true;
+      }
+
+      const buyerProfileResult = await adminClient
+        .from('buyer_profiles')
+        .select('referred_by')
+        .eq('id', userId)
+        .maybeSingle();
+      const buyerProfile = buyerProfileResult.data as { referred_by: string | null } | null;
+
+      return !!buyerProfile?.referred_by && hasFilter(filters, 'id', buyerProfile.referred_by);
+    }
+    case 'commission_events':
+    case 'token_events':
+    case 'referral_codes':
+    case 'ambassador_packs':
+    case 'pack_sale_events':
+    case 'pack_remittances':
+      return hasFilter(filters, 'ambassador_id', userId);
+    case 'orders':
+      return hasFilter(filters, 'buyer_id', userId) || hasFilter(filters, 'ambassador_id', userId);
+    default:
+      return false;
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
     // Authenticate the user via session cookie
-    const serviceClient = createServiceClient();
+    const serviceClient = await createServiceClient();
     const { data: { user }, error: authError } = await serviceClient.auth.getUser();
 
     if (authError || !user) {
@@ -52,12 +109,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use admin client to bypass RLS
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
+
+    const profileClient = createAdminClient();
+    const { data: profile } = await profileClient
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    const isAdmin = profile?.role === 'admin';
+
+    if (
+      !isAdmin &&
+      !(await canQueryTableForUser({
+        table,
+        filters,
+        userId: user.id,
+        adminClient,
+      }))
+    ) {
+      return NextResponse.json(
+        { error: 'This query exceeds the allowed scope for the current user.' },
+        { status: 403 }
+      );
+    }
 
     let query = adminClient.from(table).select(select);
 

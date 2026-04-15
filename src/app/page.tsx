@@ -15,7 +15,7 @@ export default function Home() {
     e.preventDefault();
     setError('');
 
-    const trimmed = code.trim();
+      const trimmed = code.trim().toUpperCase();
     if (!trimmed) {
       setError('Please enter your invite code');
       return;
@@ -60,7 +60,7 @@ export default function Home() {
           <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Club</span>
         </h1>
         <p className="text-on-surface-variant text-lg md:text-xl text-center max-w-xl mb-6">
-          Share a $25 premium product. Keep 50% in community commissions. Earn $FAME tokens on every sale.
+          Start as a buyer, unlock ambassador access through a 50-pack approval, then share a $25 premium product for cash commissions and direct-sale $FAME rewards.
         </p>
 
         {/* Stats strip */}
@@ -158,9 +158,9 @@ export default function Home() {
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-container to-primary flex items-center justify-center mx-auto mb-4">
                 <span className="text-on-primary font-black text-lg">2</span>
               </div>
-              <h3 className="text-lg font-bold text-on-surface mb-2">Share & Sell</h3>
+              <h3 className="text-lg font-bold text-on-surface mb-2">Buy & Request Review</h3>
               <p className="text-on-surface-variant text-sm">
-                Share the $25 premium product with your network. Use your personal referral code to track every sale.
+                Start as a buyer, age-verify your orders, and request your first 50-pack review when you are ready to move into ambassador status.
               </p>
               <div className="hidden md:block absolute top-1/2 -right-3 -translate-y-1/2 text-primary-container/40">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -174,9 +174,9 @@ export default function Home() {
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-secondary to-secondary/80 flex items-center justify-center mx-auto mb-4">
                 <span className="text-on-primary font-black text-lg">3</span>
               </div>
-              <h3 className="text-lg font-bold text-on-surface mb-2">Get Paid</h3>
+              <h3 className="text-lg font-bold text-on-surface mb-2">Get Approved & Share</h3>
               <p className="text-on-surface-variant text-sm">
-                Earn cash commissions on your sales and your team's sales across 7 tiers. Plus $FAME token rewards.
+                Once admin approves your 50-pack, your ambassador code is issued and you start earning direct and team commissions.
               </p>
             </div>
           </div>
@@ -251,10 +251,10 @@ export default function Home() {
                 <span className="text-primary-container">$FAME</span> Token Rewards
               </h2>
               <p className="text-on-surface-variant mb-4">
-                Every sale earns you $FAME tokens on top of cash commissions. Tokens are awarded at 10 $FAME per $1 of revenue.
+                Direct sales earn you $FAME on top of cash commissions. The base rate is 10 $FAME per unit sold.
               </p>
               <p className="text-on-surface-variant mb-4">
-                Founders (first 20 ambassadors) receive a <span className="text-primary-container font-semibold">2x multiplier</span> on token earnings for their first 6 months.
+                Founders (first 20 ambassadors) receive a <span className="text-primary-container font-semibold">2x multiplier</span> on direct-sale token earnings for their first 6 months, bringing direct sales to 20 $FAME per unit.
               </p>
               <p className="text-on-surface-variant">
                 Exchange rate: <span className="font-mono text-on-surface">1 $FAME = $0.01</span>
@@ -309,8 +309,8 @@ export default function Home() {
                   <span className="text-primary-container font-bold font-mono">$312.50</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-on-surface-variant">$FAME earned (10/dollar)</span>
-                  <span className="text-on-surface font-mono">12,500 $FAME</span>
+                  <span className="text-on-surface-variant">$FAME earned (Founder 20/unit)</span>
+                  <span className="text-on-surface font-mono">1,000 $FAME</span>
                 </div>
               </div>
             </div>
@@ -351,7 +351,7 @@ export default function Home() {
             </div>
             <div className="mt-4 pt-4 border-t border-outline-variant/10">
               <p className="text-on-surface-variant text-sm">
-                Month 1 potential with just 2 tiers active: <span className="text-on-surface font-bold">$1,250.00 in commissions</span> + <span className="text-primary-container font-bold">62,500 $FAME</span>
+                Month 1 potential with just 2 tiers active: <span className="text-on-surface font-bold">$1,250.00 in commissions</span> + <span className="text-primary-container font-bold">1,000 $FAME</span> during the founder window.
               </p>
             </div>
           </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';
 import { canViewAmbassadorPages } from '@/types';
 import { BookOpen, CheckCircle, Clock, Zap } from 'lucide-react';
@@ -25,6 +26,7 @@ export default function TrainingPage() {
         { title: 'Settlement & Payouts', completed: false },
       ],
       estimatedTime: '45 min',
+      href: '/buyer',
       icon: BookOpen,
       color: 'from-tertiary/20 to-tertiary/20 border-tertiary/20 text-tertiary',
     },
@@ -39,6 +41,7 @@ export default function TrainingPage() {
         { title: 'Timing & Frequency', completed: false },
       ],
       estimatedTime: '60 min',
+      href: '/ambassador/share',
       icon: Zap,
       color: 'from-primary/20 to-primary/20 border-primary/20 text-primary-fixed-dim',
     },
@@ -53,6 +56,7 @@ export default function TrainingPage() {
         { title: 'Scaling Your Network', completed: false },
       ],
       estimatedTime: '90 min',
+      href: '/ambassador/team',
       icon: Zap,
       color: 'from-tertiary/20 to-tertiary/20 border-tertiary/20 text-tertiary',
     },
@@ -66,6 +70,7 @@ export default function TrainingPage() {
         { title: 'Tracking ROI', completed: false },
       ],
       estimatedTime: '75 min',
+      href: '/ambassador/campaigns',
       icon: Zap,
       color: 'from-secondary/20 to-secondary/20 border-secondary/20 text-secondary',
     },
@@ -191,13 +196,13 @@ export default function TrainingPage() {
                 ))}
               </div>
 
-              <button className={`w-full rounded-lg py-2.5 font-semibold text-sm transition-all duration-200 ${
+              <Link href={module.href} className={`block w-full rounded-lg py-2.5 text-center font-semibold text-sm transition-all duration-200 ${
                 moduleProgress === 100
                   ? 'bg-secondary/20 text-secondary border border-secondary/30'
                   : 'bg-primary/20 text-primary border border-primary/30 hover:bg-primary/30'
               }`}>
                 {moduleProgress === 100 ? '✓ Completed' : 'Continue Module'}
-              </button>
+              </Link>
             </div>
           );
         })}
@@ -224,18 +229,18 @@ export default function TrainingPage() {
       <div className="rounded-lg border border-tertiary/20 bg-surface-container-low p-6">
         <h3 className="mb-4 font-semibold text-tertiary">Additional Resources</h3>
         <div className="space-y-2">
-          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
+          <Link href="/help" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Download Ambassador Handbook
-          </a>
-          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
+          </Link>
+          <Link href="/ambassador/team" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Watch Video: Building Your Network
-          </a>
-          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
+          </Link>
+          <Link href="/ambassador/profile" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Join the Ambassador Telegram Group
-          </a>
-          <a href="#" className="block text-sm text-tertiary hover:text-tertiary/80">
+          </Link>
+          <Link href="/ambassador/events" className="block text-sm text-tertiary hover:text-tertiary/80">
             → Schedule a 1-on-1 Coaching Call
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -48,6 +48,7 @@ interface RecentOrder {
   created_at: string;
   units: number;
   total: number;
+  items?: Array<{ paymentMethod?: string }>;
   payment_method: string;
   payment_status: string;
 }
@@ -77,9 +78,6 @@ export default function AmbassadorPage() {
   const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMemberHeatmap[]>([]);
   const [revenueByLevel, setRevenueByLevel] = useState<Record<number, number>>({});
-
-  const [setupRetrying, setSetupRetrying] = useState(false);
-  const [setupError, setSetupError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user || (role !== 'ambassador' && role !== 'admin')) return;
@@ -178,17 +176,15 @@ export default function AmbassadorPage() {
         newRecruitsThisWeek: (weekRecruitsResult.data || []).length,
       });
 
-      // Fetch tier-gated leader data for tier 4+ ambassadors
+      // Fetch tier-gated team data for tier 4+ ambassadors
       const ambTier = ambassadorResult.data?.tier ?? 0;
-      const ambRefCode = ambassadorResult.data?.referral_code ?? '';
-
       if (ambTier >= 4) {
         const [ordersResult, teamResult, revenueLevelsResult] = await Promise.all([
           // Recent orders recorded by admin for this ambassador (via safe client to bypass RLS)
           safeSupa
             .from('orders')
-            .select('id, created_at, units, total, payment_method, payment_status')
-            .eq('ambassador_code', ambRefCode)
+            .select('id, created_at, units, total, payment_status, items')
+            .eq('ambassador_id', userId)
             .order('created_at', { ascending: false })
             .limit(10),
 
@@ -199,10 +195,9 @@ export default function AmbassadorPage() {
             .eq('sponsor_id', userId),
 
           // Revenue by level from commission events (via safe client to bypass RLS)
-          // TODO: Replace with actual L1-L6 aggregation query from Supabase
           safeSupa
             .from('commission_events')
-            .select('tier_level, amount')
+            .select('tier, amount')
             .eq('ambassador_id', userId)
             .eq('status', 'available'),
         ]);
@@ -214,7 +209,8 @@ export default function AmbassadorPage() {
               created_at: o.created_at,
               units: o.units ?? 1,
               total: Number(o.total) || 0,
-              payment_method: o.payment_method || 'N/A',
+              items: o.items || [],
+              payment_method: o.items?.[0]?.paymentMethod || 'N/A',
               payment_status: o.payment_status || 'pending',
             }))
           );
@@ -245,7 +241,7 @@ export default function AmbassadorPage() {
         if (revenueLevelsResult.data) {
           const byLevel: Record<number, number> = {};
           revenueLevelsResult.data.forEach((r: any) => {
-            const lvl = r.tier_level ?? 0;
+            const lvl = r.tier ?? 0;
             byLevel[lvl] = (byLevel[lvl] || 0) + Number(r.amount);
           });
           // Include personal sales as level 0
@@ -278,39 +274,13 @@ export default function AmbassadorPage() {
     return (
       <div className="max-w-md mx-auto py-12 text-center space-y-4">
         <AlertTriangle className="h-12 w-12 text-primary-container mx-auto" />
-        <h2 className="text-xl font-bold text-on-surface">Ambassador Setup Incomplete</h2>
+        <h2 className="text-xl font-bold text-on-surface">Ambassador Approval Still Syncing</h2>
         <p className="text-on-surface-variant text-sm">
-          Your account was created but your ambassador profile could not be set up. This can happen due to a temporary issue.
+          Your ambassador role is active, but the approval record that issues your pack and referral code has not finished syncing yet.
         </p>
-        {setupError && <p className="text-error text-sm">{setupError}</p>}
-        <button
-          disabled={setupRetrying}
-          onClick={async () => {
-            setSetupRetrying(true);
-            setSetupError(null);
-            try {
-              const meta = user.user_metadata || {};
-              const res = await fetch('/api/setup-ambassador', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  userId: user.id,
-                  referralCode: meta.referral_code || '',
-                  telegramHandle: meta.telegram_handle || '',
-                  signalHandle: meta.signal_handle || '',
-                }),
-              });
-              if (!res.ok) throw new Error('Setup failed');
-              window.location.reload();
-            } catch {
-              setSetupError('Setup failed. Please contact support if this persists.');
-              setSetupRetrying(false);
-            }
-          }}
-          className="px-6 py-3 bg-gradient-to-r from-primary-container to-primary text-on-primary font-bold rounded-lg disabled:opacity-50"
-        >
-          {setupRetrying ? 'Retrying...' : 'Retry Setup'}
-        </button>
+        <p className="text-xs text-on-surface-variant">
+          Ask an admin to re-run the 50-pack approval from the Commerce Hub if this screen does not populate shortly.
+        </p>
       </div>
     );
   }
@@ -371,8 +341,8 @@ export default function AmbassadorPage() {
     },
     {
       id: 'first-code',
-      title: 'Generate Referral Code',
-      description: 'Create your first referral code to start sharing',
+      title: 'Referral Code Issued',
+      description: 'Your personal code is issued when admin approves your first 50-pack.',
       completed: !!referralCode,
       order: 2,
     },
@@ -546,14 +516,15 @@ export default function AmbassadorPage() {
                   </button>
                 </div>
                 <p className="text-xs text-on-surface-variant">
-                  Share your code to earn 15% commissions on all direct sales.
+                  Share your code to earn 25% on direct sales, plus team commissions up the ladder.
                 </p>
               </div>
               {/* QR Placeholder */}
-              <div className="p-3 bg-white rounded-lg shadow-xl shadow-black/40">
-                <div className="w-32 h-32 bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
-                  QR Code
-                </div>
+              <div className="p-4 bg-white rounded-lg shadow-xl shadow-black/40 text-center">
+                <p className="text-xs font-semibold text-gray-700">QR + share tools</p>
+                <Link href="/ambassador/share" className="mt-3 inline-flex rounded-md bg-gray-900 px-3 py-2 text-xs font-semibold text-white">
+                  Open Share Hub
+                </Link>
               </div>
             </div>
           </div>

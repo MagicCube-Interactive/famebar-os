@@ -4,7 +4,7 @@
  * Manages token rewards, founder boost multipliers, and Hold-to-Save discounts.
  *
  * Token Economics:
- * - Base rate: 10 $FAME per $1 of revenue (order total)
+ * - Base rate: 10 $FAME per direct unit sold
  * - Founders Boost: 2.0x multiplier for first 20 ambassadors, valid for 6 months from registration
  * - Hold-to-Save: Discount tiers based on $FAME holdings
  *   - 10,000+ tokens: 5% discount
@@ -130,12 +130,12 @@ export function applyHoldToSaveDiscount(
 }
 
 /**
- * Calculate tokens earned for an order
+ * Calculate tokens earned for a direct-sale order
  *
- * Base rate is 10 $FAME per $1 of revenue. If ambassador is a founder
+ * Base rate is 10 $FAME per direct unit sold. If ambassador is a founder
  * within the 6-month boost window, tokens are multiplied by 2.0x.
  *
- * @param orderTotal - Order amount in dollars (after any discounts applied)
+ * @param unitsSold - Number of direct units sold on the order
  * @param ambassadorId - Firebase UID of the ambassador earning tokens
  * @param isFounder - Whether ambassador was in first 20
  * @param founderStartDate - ISO 8601 timestamp of ambassador registration
@@ -144,20 +144,20 @@ export function applyHoldToSaveDiscount(
  *
  * @remarks
  * - Tokens are always rounded to nearest whole number
- * - Token amount = (orderTotal × TOKENS_PER_DOLLAR) × founderMultiplier
+ * - Token amount = (unitsSold × TOKENS_PER_UNIT) × founderMultiplier
  * - Event created with 'pending' status (becomes 'available' after settlement)
  *
  * @example
  * // Regular ambassador earning tokens
- * const event = calculateTokensForOrder(25.00, 'amb123', false, undefined, 'ord456');
- * // Returns TokenEvent with finalTokens: 250 (25 × 10)
+ * const event = calculateTokensForOrder(50, 'amb123', false, undefined, 'ord456');
+ * // Returns TokenEvent with finalTokens: 500 (50 × 10)
  *
  * // Founder earning tokens with boost active
- * const event = calculateTokensForOrder(25.00, 'amb123', true, new Date().toISOString(), 'ord456');
- * // Returns TokenEvent with finalTokens: 500 (25 × 10 × 2.0)
+ * const event = calculateTokensForOrder(50, 'amb123', true, new Date().toISOString(), 'ord456');
+ * // Returns TokenEvent with finalTokens: 1000 (50 × 10 × 2.0)
  */
 export function calculateTokensForOrder(
-  orderTotal: number,
+  unitsSold: number,
   ambassadorId: string,
   isFounder: boolean = false,
   founderStartDate?: string,
@@ -166,7 +166,7 @@ export function calculateTokensForOrder(
   const now = new Date().toISOString();
 
   // Calculate base tokens
-  const tokensEarned = Math.round(orderTotal * PLATFORM_CONFIG.TOKENS_PER_DOLLAR);
+  const tokensEarned = Math.round(unitsSold * PLATFORM_CONFIG.TOKENS_PER_UNIT);
 
   // Apply founder multiplier if applicable
   const founderMultiplier = getFounderMultiplier(isFounder, founderStartDate);

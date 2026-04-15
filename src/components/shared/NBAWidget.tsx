@@ -110,11 +110,10 @@ export default function NBAWidget({
           <NextBestActionCard
             key={action.actionId}
             action={action}
-            onCTA={(actionId) => {
+            onCTA={() => {
               if (onActionClick) {
                 onActionClick(action);
               }
-              // In production, handle the action navigation here
               handleActionNavigation(action);
             }}
           />
@@ -147,30 +146,28 @@ function getDefaultTitle(role: string): string {
 
 /**
  * Handles navigation for action CTAs
- * In production, integrate with your router
  */
 function handleActionNavigation(action: NextBestAction): void {
   const navigationMap: Record<string, string> = {
     // Ambassador
-    complete_kyc: '/profile/verify-kyc',
-    add_telegram: '/profile/telegram',
-    complete_onboarding: '/onboarding',
+    complete_kyc: '/ambassador/profile',
+    add_telegram: '/ambassador/profile',
+    complete_onboarding: '/ambassador/training',
     share_code: '/ambassador/share',
-    reach_active_requirement: '/ambassador/sales',
-    first_recruit: '/recruit',
-    tier_advancement: '/ambassador/tier',
+    reach_active_requirement: '/ambassador/earnings',
+    first_recruit: '/ambassador/team',
+    tier_advancement: '/ambassador/tokens',
 
     // Admin
     review_orders: '/admin/orders',
-    collect_payout_info: '/admin/payouts',
-    process_refunds: '/admin/refunds',
+    collect_payout_info: '/admin/cash-ledger',
+    process_refunds: '/admin/orders',
     schedule_event: '/admin/events',
-    settlement_report: '/admin/settlement',
+    settlement_report: '/admin/cash-ledger',
   };
 
   const path = navigationMap[action.actionType];
   if (path) {
-    // window.location.href = path; // In real app, use Next router
-    console.log('Navigate to:', path);
+    window.location.assign(path);
   }
 }

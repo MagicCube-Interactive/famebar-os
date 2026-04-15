@@ -8,7 +8,7 @@
  * Never use in client components.
  */
 
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
@@ -16,8 +16,8 @@ import { cookies } from 'next/headers';
  * Create a Supabase server client for API routes and server components
  * This uses the anon key and manages session cookies
  */
-export function createServiceClient() {
-  const cookieStore = cookies();
+export async function createServiceClient() {
+  const cookieStore = await cookies();
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -28,22 +28,16 @@ export function createServiceClient() {
 
   return createServerClient(supabaseUrl, supabaseKey, {
     cookies: {
-      get(name: string) {
-        return cookieStore.get(name)?.value;
+      getAll() {
+        return cookieStore.getAll();
       },
-      set(name: string, value: string, options: CookieOptions) {
+      setAll(cookiesToSet) {
         try {
-          cookieStore.set(name, value, options);
+          cookiesToSet.forEach(({ name, value, options }) => {
+            cookieStore.set(name, value, options);
+          });
         } catch (error) {
-          // The `set` method was called from a Server Component.
-          // This can be ignored if you have middleware refreshing user sessions.
-        }
-      },
-      remove(name: string, options: CookieOptions) {
-        try {
-          cookieStore.delete(name);
-        } catch (error) {
-          // The `delete` method was called from a Server Component.
+          // The `setAll` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing user sessions.
         }
       },

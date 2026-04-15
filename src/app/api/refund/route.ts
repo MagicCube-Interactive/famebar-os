@@ -10,7 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { AccessError, requireAdminActor } from '@/lib/server/auth-guards';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -37,6 +37,7 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<RefundResponse>> {
   try {
+    const { supabase } = await requireAdminActor();
     const body = (await request.json()) as RefundRequest;
     const { orderId, reason } = body;
 
@@ -52,8 +53,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const supabase = createAdminClient();
 
     // Fetch order
     const { data: order, error: orderError } = await supabase
@@ -166,6 +165,18 @@ export async function POST(
       tokensClawedBack: totalTokensClawed,
     });
   } catch (error) {
+    if (error instanceof AccessError) {
+      return NextResponse.json(
+        {
+          success: false,
+          orderId: '',
+          commissionClawedBack: 0,
+          tokensClawedBack: 0,
+          error: error.message,
+        },
+        { status: error.status }
+      );
+    }
     console.error('Refund processing error:', error);
     return NextResponse.json(
       {

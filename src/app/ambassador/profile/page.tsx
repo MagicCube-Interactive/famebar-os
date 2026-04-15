@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';
-import { User, Mail, Phone, MapPin, Zap, MessageCircle, Shield, Copy, Check } from 'lucide-react';
+import { User, Mail, Phone, Zap, MessageCircle, Shield, Copy, Check } from 'lucide-react';
 
 export default function ProfilePage() {
   const { userProfile, isAdmin } = useAuthContext();
@@ -204,9 +205,9 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        <button className="mt-6 w-full rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/10 px-4 py-2.5 text-sm font-semibold text-fuchsia-300 transition-all duration-200 hover:bg-fuchsia-500/20">
-          Edit Contact Information
-        </button>
+        <Link href="/help" className="mt-6 block w-full rounded-lg border border-fuchsia-500/50 bg-fuchsia-500/10 px-4 py-2.5 text-center text-sm font-semibold text-fuchsia-300 transition-all duration-200 hover:bg-fuchsia-500/20">
+          Contact Ops for Profile Updates
+        </Link>
       </div>
 
       {/* Verification Status */}
@@ -316,13 +317,16 @@ export default function ProfilePage() {
           These actions cannot be undone. Proceed with caution.
         </p>
         <div className="space-y-2">
-          <button className="w-full rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 transition-all duration-200 hover:bg-red-500/20">
+          <button disabled className="w-full rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 opacity-50 cursor-not-allowed">
             Pause Account
           </button>
-          <button className="w-full rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 transition-all duration-200 hover:bg-red-500/20">
+          <button disabled className="w-full rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-300 opacity-50 cursor-not-allowed">
             Delete Account
           </button>
         </div>
+        <p className="mt-3 text-xs text-red-200/70">
+          Account pauses and deletions are intentionally disabled until support and retention rules are finalized.
+        </p>
       </div>
     </div>
   );

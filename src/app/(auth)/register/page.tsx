@@ -169,7 +169,7 @@ function RegisterContent() {
       const { data: codeCheck, error: codeCheckError } = await supabase
         .from('referral_codes')
         .select('code')
-        .eq('code', referralCode.trim())
+        .eq('code', referralCode.trim().toUpperCase())
         .eq('is_active', true)
         .single();
 
@@ -184,38 +184,40 @@ function RegisterContent() {
         password,
         firstName,
         lastName,
-        referralCode: referralCode.trim(),
+        referralCode: referralCode.trim().toUpperCase(),
         telegramHandle: telegramHandle.trim().replace(/^@/, ''),
         signalHandle: signalHandle.trim().replace(/^@/, ''),
+        ageVerified: ageConfirmed,
       });
 
-      // Create ambassador_profiles + referral_codes for the new user
+      // Create a buyer profile linked to the sponsoring ambassador.
       if (user) {
         try {
-          const setupRes = await fetch('/api/setup-ambassador', {
+          const setupRes = await fetch('/api/setup-buyer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               userId: user.id,
-              referralCode: referralCode.trim(),
+              referralCode: referralCode.trim().toUpperCase(),
               telegramHandle: telegramHandle.trim().replace(/^@/, ''),
               signalHandle: signalHandle.trim().replace(/^@/, ''),
+              ageVerified: ageConfirmed,
             }),
           });
 
           if (!setupRes.ok) {
-            console.error('Setup ambassador returned', setupRes.status);
-            router.push('/ambassador?setup=incomplete');
+            console.error('Setup buyer returned', setupRes.status);
+            router.push('/buyer?setup=incomplete');
             return;
           }
         } catch (setupErr) {
-          console.error('Ambassador setup error:', setupErr);
-          router.push('/ambassador?setup=incomplete');
+          console.error('Buyer setup error:', setupErr);
+          router.push('/buyer?setup=incomplete');
           return;
         }
       }
 
-      router.push('/ambassador');
+      router.push('/buyer');
     } catch (err: any) {
       setIsLoading(false);
       setError(err.message || 'Failed to create account. Please try again.');
@@ -235,7 +237,8 @@ function RegisterContent() {
 
   // Already logged in — show interstitial instead of blind redirect
   if (isAuthenticated) {
-    const dashboardPath = role === 'admin' ? '/admin' : '/ambassador';
+    const dashboardPath =
+      role === 'admin' ? '/admin' : role === 'ambassador' ? '/ambassador' : '/buyer';
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary-container/5 rounded-full blur-3xl pointer-events-none" />
@@ -290,12 +293,15 @@ function RegisterContent() {
               <span className="bg-gradient-to-r from-primary-container to-primary bg-clip-text text-transparent">Bar</span>
             </h1>
           </Link>
-          <p className="text-on-surface-variant text-sm">Become an Ambassador</p>
+          <p className="text-on-surface-variant text-sm">Start as a Buyer</p>
         </div>
 
         {/* Register Card */}
         <div className="bg-surface-container rounded-xl p-8 border border-outline-variant/10">
-          <h2 className="text-2xl font-bold text-on-surface mb-6">Create Your Account</h2>
+          <h2 className="text-2xl font-bold text-on-surface mb-2">Create Your Buyer Account</h2>
+          <p className="mb-6 text-sm text-on-surface-variant">
+            Your personal referral code is issued later, when admin approves your first 50-pack.
+          </p>
 
           {/* Error Message */}
           {error && (
@@ -590,7 +596,7 @@ function RegisterContent() {
                   Creating account...
                 </>
               ) : (
-                'Become an Ambassador'
+                'Create Buyer Account'
               )}
             </button>
           </form>

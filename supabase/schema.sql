@@ -9,7 +9,7 @@ create table public.profiles (
   id uuid references auth.users on delete cascade primary key,
   email text not null,
   full_name text,
-  role text not null default 'buyer' check (role in ('buyer', 'ambassador', 'leader', 'admin')),
+  role text not null default 'buyer' check (role in ('buyer', 'ambassador', 'admin')),
   avatar_url text,
   telegram_handle text,
   telegram_chat_id text,
@@ -58,6 +58,8 @@ create table public.buyer_profiles (
   fame_balance numeric(12,2) default 0,
   hold_to_save_tier integer default 0,
   total_orders integer default 0,
+  requested_ambassador_at timestamptz,
+  promoted_at timestamptz,
   created_at timestamptz default now()
 );
 
@@ -67,9 +69,12 @@ create table public.buyer_profiles (
 
 create table public.orders (
   id uuid default uuid_generate_v4() primary key,
-  buyer_id uuid references public.profiles not null,
+  buyer_id uuid references public.profiles,
   ambassador_code text not null,
   ambassador_id uuid references public.ambassador_profiles,
+  order_type text default 'retail' check (order_type in ('retail', 'consignment_sale', 'wholesale_pack')),
+  units integer default 1,
+  pack_id uuid,
   items jsonb not null default '[]',
   subtotal numeric(10,2) not null,
   discount numeric(10,2) default 0,
@@ -77,6 +82,7 @@ create table public.orders (
   payment_status text default 'pending' check (payment_status in ('pending', 'paid', 'failed', 'refunded')),
   settlement_status text default 'pending' check (settlement_status in ('pending', 'settled', 'refunded', 'clawedback')),
   referral_chain jsonb default '[]',
+  metadata jsonb default '{}'::jsonb,
   age_verified boolean default false,
   created_at timestamptz default now(),
   settled_at timestamptz,
@@ -129,6 +135,69 @@ create table public.referral_codes (
   expires_at timestamptz,
   is_active boolean default true,
   usage_count integer default 0,
+  created_at timestamptz default now()
+);
+
+-- ============================================================================
+-- AMBASSADOR PACKS (50-PACK ASSIGNMENT / PURCHASE)
+-- ============================================================================
+
+create table public.ambassador_packs (
+  id uuid default uuid_generate_v4() primary key,
+  ambassador_id uuid references public.ambassador_profiles(id) not null,
+  mode text not null check (mode in ('consignment', 'wholesale')),
+  quantity integer not null default 50,
+  status text not null default 'approved' check (status in ('approved', 'selling', 'sold_out', 'settled', 'paid')),
+  referral_code_issued text,
+  approved_by uuid references public.profiles(id),
+  approved_at timestamptz default now(),
+  units_sold integer not null default 0,
+  outstanding_units integer not null default 50,
+  cash_retained numeric(12,2) not null default 0,
+  remittance_due numeric(12,2) not null default 0,
+  remitted_amount numeric(12,2) not null default 0,
+  remittance_balance numeric(12,2) not null default 0,
+  purchase_order_id uuid references public.orders(id),
+  payment_received_at timestamptz,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- ============================================================================
+-- CONSIGNMENT PACK SALE EVENTS
+-- ============================================================================
+
+create table public.pack_sale_events (
+  id uuid default uuid_generate_v4() primary key,
+  pack_id uuid references public.ambassador_packs(id) not null,
+  order_id uuid references public.orders(id) not null,
+  ambassador_id uuid references public.ambassador_profiles(id) not null,
+  buyer_id uuid references public.profiles(id),
+  units integer not null,
+  gross_revenue numeric(12,2) not null,
+  ambassador_cash_earned numeric(12,2) not null,
+  remittance_due numeric(12,2) not null,
+  payment_method text check (payment_method in ('cash', 'zelle', 'venmo')),
+  customer_name text,
+  notes text,
+  recorded_by uuid references public.profiles(id),
+  created_at timestamptz default now()
+);
+
+-- ============================================================================
+-- CONSIGNMENT REMITTANCES
+-- ============================================================================
+
+create table public.pack_remittances (
+  id uuid default uuid_generate_v4() primary key,
+  pack_id uuid references public.ambassador_packs(id) not null,
+  ambassador_id uuid references public.ambassador_profiles(id) not null,
+  amount numeric(12,2) not null,
+  method text not null check (method in ('ach', 'zelle', 'wire')),
+  reference text,
+  notes text,
+  recorded_by uuid references public.profiles(id),
   created_at timestamptz default now()
 );
 
@@ -221,11 +290,16 @@ create table public.telegram_contacts (
 create index idx_orders_buyer on public.orders(buyer_id);
 create index idx_orders_ambassador on public.orders(ambassador_id);
 create index idx_orders_status on public.orders(settlement_status);
+create index idx_orders_type on public.orders(order_type);
 create index idx_commission_order on public.commission_events(order_id);
 create index idx_commission_ambassador on public.commission_events(ambassador_id);
 create index idx_token_ambassador on public.token_events(ambassador_id);
 create index idx_referral_code on public.referral_codes(code);
 create index idx_team_sponsor on public.team_nodes(sponsor_id);
+create index idx_buyer_profiles_referred_by on public.buyer_profiles(referred_by);
+create index idx_ambassador_packs_ambassador on public.ambassador_packs(ambassador_id);
+create index idx_pack_sale_events_pack on public.pack_sale_events(pack_id);
+create index idx_pack_remittances_pack on public.pack_remittances(pack_id);
 
 -- ============================================================================
 -- TRIGGER: Auto-create profile on signup
@@ -267,6 +341,9 @@ alter table public.campaigns enable row level security;
 alter table public.events enable row level security;
 alter table public.audit_logs enable row level security;
 alter table public.telegram_contacts enable row level security;
+alter table public.ambassador_packs enable row level security;
+alter table public.pack_sale_events enable row level security;
+alter table public.pack_remittances enable row level security;
 
 -- Profile policies
 create policy "Users can view own profile" on public.profiles for select using (auth.uid() = id);
@@ -296,6 +373,26 @@ create policy "Ambassadors can view own tokens" on public.token_events for selec
 -- Referral code policies
 create policy "Anyone can read active codes" on public.referral_codes for select using (is_active = true);
 create policy "Ambassadors can manage own codes" on public.referral_codes for all using (auth.uid() = ambassador_id);
+
+-- Buyer profile policies
+create policy "Users can view own buyer profile" on public.buyer_profiles for select using (auth.uid() = id);
+create policy "Admins can view all buyer profiles" on public.buyer_profiles for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+
+-- Pack policies
+create policy "Ambassadors can view own packs" on public.ambassador_packs for select using (auth.uid() = ambassador_id);
+create policy "Admins can view all packs" on public.ambassador_packs for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+create policy "Ambassadors can view own pack sale events" on public.pack_sale_events for select using (auth.uid() = ambassador_id);
+create policy "Admins can view all pack sale events" on public.pack_sale_events for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
+create policy "Ambassadors can view own remittances" on public.pack_remittances for select using (auth.uid() = ambassador_id);
+create policy "Admins can view all remittances" on public.pack_remittances for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
+);
 
 -- Team node policies
 create policy "Ambassadors can view own team" on public.team_nodes for select using (auth.uid() = ambassador_id or auth.uid() = sponsor_id);

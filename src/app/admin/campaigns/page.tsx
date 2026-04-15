@@ -98,7 +98,7 @@ export default function CampaignsPage() {
           <h1 className="text-3xl font-bold text-on-surface">Campaigns</h1>
           <p className="mt-1 text-gray-500">Marketing campaigns and performance</p>
         </div>
-        <button className="rounded-lg bg-gradient-to-r from-primary-container to-primary px-4 py-2 text-sm font-semibold text-on-primary hover:opacity-90 transition-all">
+        <button disabled className="rounded-lg bg-gradient-to-r from-primary-container to-primary px-4 py-2 text-sm font-semibold text-on-primary opacity-50 cursor-not-allowed">
           + New Campaign
         </button>
       </div>
@@ -143,6 +143,9 @@ export default function CampaignsPage() {
       ) : (
         <DataTable data={filtered} columns={columns} />
       )}
+      <p className="text-xs text-gray-500">
+        Campaign creation remains disabled until campaign-specific referral code generation and attribution rules are defined.
+      </p>
     </div>
   );
 }

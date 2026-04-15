@@ -11,10 +11,12 @@ import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     // Use the service client (with cookie-based auth) to get the current user
-    const supabase = createServiceClient();
+    const supabase = await createServiceClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
 
     if (authError || !user) {
@@ -28,10 +30,15 @@ export async function GET() {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
-    // Fetch profile and ambassador_profiles in parallel
-    const [profileResult, ambassadorResult] = await Promise.all([
+    // Fetch profile, buyer profile, and ambassador profile in parallel.
+    const [profileResult, buyerResult, ambassadorResult] = await Promise.all([
       adminClient
         .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single(),
+      adminClient
+        .from('buyer_profiles')
         .select('*')
         .eq('id', user.id)
         .single(),
@@ -57,6 +64,16 @@ export async function GET() {
       // Ensure telegram/signal are always present (DB column or auth metadata fallback)
       telegram_handle: profileResult.data.telegram_handle || authMeta.telegram_handle || null,
       signal_handle: profileResult.data.signal_handle || authMeta.signal_handle || null,
+      ...(buyerResult.data
+        ? {
+            referredBy: buyerResult.data.referred_by,
+            fameBalance: buyerResult.data.fame_balance,
+            holdToSaveTier: buyerResult.data.hold_to_save_tier,
+            totalOrders: buyerResult.data.total_orders,
+            requestedAmbassadorAt: buyerResult.data.requested_ambassador_at,
+            promotedAt: buyerResult.data.promoted_at,
+          }
+        : {}),
       // Ambassador-specific fields (camelCase for client use)
       ...(ambassadorResult.data
         ? {

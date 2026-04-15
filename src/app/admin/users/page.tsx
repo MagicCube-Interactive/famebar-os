@@ -12,30 +12,23 @@ interface User {
   created_at: string;
 }
 
-const ROLES = ['all', 'ambassador', 'admin'] as const;
+const ROLES = ['all', 'buyer', 'ambassador', 'admin'] as const;
 const ROLE_LABELS: Record<string, string> = {
   all: 'All',
+  buyer: 'Buyers',
   ambassador: 'Ambassadors',
   admin: 'Admins',
 };
 
 const ROLE_BADGE_STYLES: Record<string, string> = {
   admin: 'bg-primary/10 text-primary border border-primary/20',
+  buyer: 'bg-secondary/10 text-secondary border border-secondary/20',
   ambassador: 'bg-primary-fixed/20 text-primary-fixed-dim border border-primary-fixed/20',
 };
 
-const EDITABLE_ROLES = ['ambassador', 'admin'] as const;
+const EDITABLE_ROLES = ['buyer', 'admin'] as const;
 
 const PER_PAGE = 10;
-
-function generateReferralCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'FB-';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -54,7 +47,6 @@ export default function UsersPage() {
 
   // Invite modal state
   const [showInvite, setShowInvite] = useState(false);
-  const [inviteRole, setInviteRole] = useState('ambassador');
 
   const fetchUsers = useCallback(async () => {
     const safe = createSafeClient();
@@ -104,6 +96,7 @@ export default function UsersPage() {
 
   // Stats
   const totalCount = users.length;
+  const buyerCount = users.filter((u) => u.role === 'buyer').length;
   const ambassadorCount = users.filter((u) => u.role === 'ambassador').length;
   const adminCount = users.filter((u) => u.role === 'admin').length;
 
@@ -130,12 +123,12 @@ export default function UsersPage() {
     setSaveSuccess(false);
 
     try {
-      const safe = createSafeClient();
       const oldRole = editUser.role;
       const newRole = editRole;
-      const isPromotingToAmbassador =
-        newRole === 'ambassador' &&
-        oldRole !== 'ambassador';
+
+      if (oldRole !== newRole && (oldRole === 'ambassador' || newRole === 'ambassador')) {
+        throw new Error('Use the Commerce Hub to approve or manage ambassador status.');
+      }
 
       // Update profiles table via admin mutate endpoint (bypasses RLS recursion)
       const profileRes = await fetch('/api/admin/mutate', {
@@ -156,43 +149,6 @@ export default function UsersPage() {
       const profileResult = await profileRes.json().catch(() => ({ error: 'Invalid response' }));
       if (!profileRes.ok || !profileResult.success) {
         throw new Error(profileResult.error || 'Failed to update profile');
-      }
-
-      // If promoting to ambassador, ensure ambassador_profiles record exists
-      if (isPromotingToAmbassador) {
-        const { data: existing } = await safe
-          .from('ambassador_profiles')
-          .select('id')
-          .eq('id', editUser.id)
-          .single();
-
-        if (!existing) {
-          const insertRes = await fetch('/api/admin/mutate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              table: 'ambassador_profiles',
-              action: 'insert',
-              fields: {
-                id: editUser.id,
-                referral_code: generateReferralCode(),
-                tier: 0,
-                rank: 'new',
-                is_founder: false,
-                is_active: false,
-                personal_sales_this_month: 0,
-                total_sales: 0,
-                total_recruits: 0,
-                kyc_verified: false,
-              },
-            }),
-          });
-          const insertResult = await insertRes.json().catch(() => ({ error: 'Invalid response' }));
-          if (!insertRes.ok || !insertResult.success) {
-            throw new Error(insertResult.error || 'Failed to create ambassador profile');
-          }
-        }
       }
 
       // Update local state
@@ -263,6 +219,7 @@ export default function UsersPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
         {[
           { label: 'Total Users', value: totalCount, accent: 'text-on-surface' },
+          { label: 'Buyers', value: buyerCount, accent: 'text-secondary' },
           { label: 'Ambassadors', value: ambassadorCount, accent: 'text-primary-fixed-dim' },
           { label: 'Admins', value: adminCount, accent: 'text-primary' },
         ].map((stat) => (
@@ -296,6 +253,8 @@ export default function UsersPage() {
               <span className="ml-1.5 opacity-60">
                 {r === 'all'
                   ? totalCount
+                  : r === 'buyer'
+                  ? buyerCount
                   : r === 'ambassador'
                   ? ambassadorCount
                   : adminCount}
@@ -657,12 +616,9 @@ export default function UsersPage() {
                     </option>
                   ))}
                 </select>
-                {editRole === 'ambassador' &&
-                  editUser.role !== 'ambassador' && (
-                    <p className="mt-2 text-[11px] text-primary-fixed-dim">
-                      An ambassador profile will be created automatically with a new referral code.
-                    </p>
-                  )}
+                <p className="mt-2 text-[11px] text-on-surface-variant">
+                  Buyer and admin roles can be adjusted here. Ambassador promotion is handled in the Commerce Hub so the 50-pack approval and referral-code issuance stay in sync.
+                </p>
               </div>
 
               {/* Verified Toggle */}
@@ -768,32 +724,8 @@ export default function UsersPage() {
             {/* Body */}
             <div className="px-6 py-5 space-y-5">
               <p className="text-sm text-on-surface-variant">
-                Share the registration link below with the user you want to invite. They will be assigned the selected role upon sign-up.
+                Share the registration link below with the user you want to invite. All signups now begin in the buyer stage, sponsor attribution is entered on the form, and ambassador access only turns on after a 50-pack is approved in the Commerce Hub.
               </p>
-
-              {/* Role selector */}
-              <div>
-                <label className="block text-[10px] font-black text-on-surface-variant uppercase tracking-wider mb-2">
-                  Role
-                </label>
-                <select
-                  value={inviteRole}
-                  onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg text-sm text-on-surface focus:ring-1 focus:ring-primary/40 focus:outline-none appearance-none cursor-pointer"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%239ca3af' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E")`,
-                    backgroundRepeat: 'no-repeat',
-                    backgroundPosition: 'right 12px center',
-                    backgroundSize: '16px',
-                  }}
-                >
-                  {EDITABLE_ROLES.map((r) => (
-                    <option key={r} value={r}>
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
 
               {/* Link display */}
               <div>
@@ -803,13 +735,13 @@ export default function UsersPage() {
                 <div className="flex items-center gap-2">
                   <input
                     readOnly
-                    value={`${appUrl}/register?role=${inviteRole}`}
+                    value={`${appUrl}/register`}
                     className="flex-1 px-4 py-2.5 bg-surface-container-highest border border-outline-variant/20 rounded-lg text-xs font-mono text-on-surface select-all focus:outline-none"
                   />
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText(
-                        `${appUrl}/register?role=${inviteRole}`
+                        `${appUrl}/register`
                       );
                     }}
                     className="shrink-0 px-3 py-2.5 bg-primary-container/20 text-primary-container rounded-lg text-xs font-bold hover:bg-primary-container/30 transition-colors"
@@ -819,6 +751,9 @@ export default function UsersPage() {
                     </svg>
                   </button>
                 </div>
+                <p className="mt-2 text-[11px] text-on-surface-variant">
+                  The user will still need a valid sponsor code to complete registration.
+                </p>
               </div>
             </div>
 

@@ -18,7 +18,7 @@ interface CommissionEvent {
   id: string;
   order_id: string;
   ambassador_id: string;
-  tier_level: number;
+  tier: number;
   rate: number;
   amount: number;
   status: 'pending' | 'available' | 'paid' | 'clawedback';
@@ -171,8 +171,8 @@ export default function EarningsPage() {
     const map = new Map<number, { total: number; count: number; rate: number }>();
     for (const c of periodCommissions) {
       if (c.status === 'clawedback') continue;
-      const prev = map.get(c.tier_level) || { total: 0, count: 0, rate: c.rate };
-      map.set(c.tier_level, {
+      const prev = map.get(c.tier) || { total: 0, count: 0, rate: c.rate };
+      map.set(c.tier, {
         total: prev.total + c.amount,
         count: prev.count + 1,
         rate: c.rate,
@@ -191,7 +191,7 @@ export default function EarningsPage() {
       (c) =>
         c.order_id.toLowerCase().includes(q) ||
         c.status.toLowerCase().includes(q) ||
-        tierLabel(c.tier_level).toLowerCase().includes(q),
+        tierLabel(c.tier).toLowerCase().includes(q),
     );
   }, [periodCommissions, searchQuery]);
 
@@ -384,7 +384,12 @@ export default function EarningsPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <button className="flex items-center gap-2 px-4 py-2 bg-surface-container rounded-lg text-sm font-semibold text-on-surface hover:bg-surface-variant transition-colors">
+            <button
+              type="button"
+              disabled
+              title="Additional filters are not configured yet."
+              className="flex items-center gap-2 px-4 py-2 bg-surface-container rounded-lg text-sm font-semibold text-on-surface opacity-50 cursor-not-allowed"
+            >
               <SlidersHorizontal className="h-4 w-4" /> Filter
             </button>
           </div>
@@ -427,7 +432,7 @@ export default function EarningsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-0.5 rounded bg-surface-container-highest text-[10px] font-bold text-on-surface">
-                        {c.tier_level === 0 ? 'DIRECT' : `L${c.tier_level} NET`}
+                        {c.tier === 0 ? 'DIRECT' : `L${c.tier} NET`}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm font-mono text-on-surface">

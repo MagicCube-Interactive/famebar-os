@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import QRCode from 'qrcode';
 import { useAuthContext } from '@/context/AuthContext';
 import { createSafeClient } from '@/lib/supabase/safe-client';
 import {
@@ -36,6 +39,10 @@ export default function ShareHubPage() {
   const [copiedTemplate, setCopiedTemplate] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [copiedCustomMessage, setCopiedCustomMessage] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [showCustomizer, setShowCustomizer] = useState(false);
+  const [customMessage, setCustomMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,9 +89,10 @@ export default function ShareHubPage() {
     fetchData();
   }, [user, role]);
 
-  if (!user || role !== 'ambassador' && role !== 'admin') return null;
-
-  const shortLink = primaryCode ? `fmbar.co/ref/${primaryCode.toLowerCase()}` : '';
+  const shareLink =
+    typeof window !== 'undefined' && primaryCode
+      ? `${window.location.origin}/register?ref=${encodeURIComponent(primaryCode)}`
+      : '';
   const totalUsage = referralCodes.reduce((sum, c) => sum + (c.usage_count || 0), 0);
 
   // Conversion rate
@@ -94,32 +102,62 @@ export default function ShareHubPage() {
   const platinumTarget = 200;
   const progressPct = Math.min(100, Math.round((conversionsThisMonth / platinumTarget) * 100));
 
-  const templates = [
-    {
-      id: 'telegram',
-      channel: 'Telegram Broadcast',
-      icon: Send,
-      iconBg: 'bg-blue-500/20',
-      iconColor: 'text-blue-400',
-      template: `Hey team! Exclusive 25% off FameClub access via my private link. Use code ${primaryCode} at checkout. Limited spots available for the new intake.`,
-    },
-    {
-      id: 'instagram',
-      channel: 'Instagram Stories',
-      icon: Camera,
-      iconBg: 'bg-pink-500/20',
-      iconColor: 'text-pink-400',
-      template: `How I'm managing my field operations... Click the link in bio and use ${primaryCode} to get the OS I use daily.`,
-    },
-    {
-      id: 'tiktok',
-      channel: 'TikTok Hook',
-      icon: Film,
-      iconBg: 'bg-white/10',
-      iconColor: 'text-on-surface',
-      template: `POV: You found the secret tool used by the top 1% of field ambassadors. Link in bio + code ${primaryCode}. Don't sleep on this one.`,
-    },
-  ];
+  const templates = useMemo(
+    () => [
+      {
+        id: 'telegram',
+        channel: 'Telegram Broadcast',
+        icon: Send,
+        iconBg: 'bg-blue-500/20',
+        iconColor: 'text-blue-400',
+        template: `Hey team! Exclusive 25% off FameClub access via my private link. Use code ${primaryCode} at checkout. Limited spots available for the new intake.`,
+      },
+      {
+        id: 'instagram',
+        channel: 'Instagram Stories',
+        icon: Camera,
+        iconBg: 'bg-pink-500/20',
+        iconColor: 'text-pink-400',
+        template: `How I'm managing my field operations... Click the link in bio and use ${primaryCode} to get the OS I use daily.`,
+      },
+      {
+        id: 'tiktok',
+        channel: 'TikTok Hook',
+        icon: Film,
+        iconBg: 'bg-white/10',
+        iconColor: 'text-on-surface',
+        template: `POV: You found the secret tool used by the top 1% of field ambassadors. Link in bio + code ${primaryCode}. Don't sleep on this one.`,
+      },
+    ],
+    [primaryCode]
+  );
+
+  useEffect(() => {
+    if (!shareLink) {
+      setQrDataUrl('');
+      return;
+    }
+
+    QRCode.toDataURL(shareLink, {
+      width: 320,
+      margin: 1,
+      color: {
+        dark: '#111827',
+        light: '#ffffff',
+      },
+    })
+      .then(setQrDataUrl)
+      .catch((error) => {
+        console.error('Failed to build QR code:', error);
+        setQrDataUrl('');
+      });
+  }, [shareLink]);
+
+  useEffect(() => {
+    if (!customMessage && templates[0]?.template) {
+      setCustomMessage(templates[0].template);
+    }
+  }, [customMessage, templates]);
 
   const handleCopyTemplate = (id: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -134,10 +172,29 @@ export default function ShareHubPage() {
   };
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shortLink);
+    navigator.clipboard.writeText(shareLink);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2000);
   };
+
+  const handleDownloadQr = () => {
+    if (!qrDataUrl) {
+      return;
+    }
+
+    const anchor = document.createElement('a');
+    anchor.href = qrDataUrl;
+    anchor.download = `${primaryCode || 'famebar'}-share-qr.png`;
+    anchor.click();
+  };
+
+  const handleCopyCustomMessage = () => {
+    navigator.clipboard.writeText(customMessage);
+    setCopiedCustomMessage(true);
+    setTimeout(() => setCopiedCustomMessage(false), 2000);
+  };
+
+  if (!user || role !== 'ambassador' && role !== 'admin') return null;
 
   if (loading) {
     return (
@@ -194,7 +251,7 @@ export default function ShareHubPage() {
                 <label className="text-xs text-on-surface-variant mb-2 block">Short Link</label>
                 <div className="flex items-center justify-between bg-surface-container-lowest p-4 rounded-lg border border-outline-variant/10">
                   <span className="font-mono text-sm text-on-surface">
-                    {shortLink || '---'}
+                    {shareLink || '---'}
                   </span>
                   <button
                     onClick={handleCopyLink}
@@ -207,18 +264,30 @@ export default function ShareHubPage() {
                   <p className="text-xs text-secondary mt-1">Copied!</p>
                 )}
               </div>
-              {/* QR Code placeholder */}
+              {/* QR Code */}
               <div className="pt-4">
                 <div className="bg-white p-4 rounded-xl inline-block">
-                  <div className="w-32 h-32 bg-gray-200 flex items-center justify-center">
-                    <span className="text-xs text-gray-500 text-center px-2">
-                      QR Code
-                    </span>
-                  </div>
+                  {qrDataUrl ? (
+                    <Image src={qrDataUrl} alt="Referral QR code" width={128} height={128} className="w-32 h-32" />
+                  ) : (
+                    <div className="w-32 h-32 bg-gray-200 flex items-center justify-center">
+                      <span className="text-xs text-gray-500 text-center px-2">
+                        QR Code
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-on-surface-variant mt-4">
                   Download high-res QR for offline sharing
                 </p>
+                <button
+                  onClick={handleDownloadQr}
+                  disabled={!qrDataUrl}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-surface-container px-4 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:opacity-50"
+                >
+                  <Download className="w-4 h-4" />
+                  Download QR
+                </button>
               </div>
             </div>
           </div>
@@ -227,12 +296,33 @@ export default function ShareHubPage() {
           <div className="bg-surface-container-low rounded-xl p-6">
             <h3 className="text-sm font-bold text-on-surface mb-4">Quick Actions</h3>
             <div className="grid grid-cols-2 gap-3">
-              <button className="flex items-center justify-center gap-2 py-3 bg-surface-container rounded-lg text-sm font-medium hover:bg-surface-container-high transition-colors text-on-surface">
-                <Download className="w-4 h-4" /> Assets
+              <button
+                onClick={handleDownloadQr}
+                disabled={!qrDataUrl}
+                className="flex items-center justify-center gap-2 py-3 bg-surface-container rounded-lg text-sm font-medium hover:bg-surface-container-high transition-colors text-on-surface disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" /> QR Asset
               </button>
-              <button className="flex items-center justify-center gap-2 py-3 bg-surface-container rounded-lg text-sm font-medium hover:bg-surface-container-high transition-colors text-on-surface">
+              <button
+                onClick={() => setShowCustomizer((current) => !current)}
+                className="flex items-center justify-center gap-2 py-3 bg-surface-container rounded-lg text-sm font-medium hover:bg-surface-container-high transition-colors text-on-surface"
+              >
                 <Pencil className="w-4 h-4" /> Customize
               </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <Link
+                href="/ambassador/campaigns"
+                className="flex items-center justify-center gap-2 rounded-lg bg-surface-container px-4 py-3 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                <Download className="w-4 h-4" /> Browse Assets
+              </Link>
+              <Link
+                href="/ambassador/training"
+                className="flex items-center justify-center gap-2 rounded-lg bg-surface-container px-4 py-3 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-high"
+              >
+                <ShieldCheck className="w-4 h-4" /> Sharing Training
+              </Link>
             </div>
           </div>
         </section>
@@ -277,6 +367,29 @@ export default function ShareHubPage() {
                 );
               })}
             </div>
+            {showCustomizer && (
+              <div className="mt-8 rounded-xl border border-outline-variant/10 bg-surface-container p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-bold text-on-surface">Custom Message Builder</h4>
+                  <button
+                    onClick={handleCopyCustomMessage}
+                    className="inline-flex items-center gap-2 rounded-lg bg-primary-container px-3 py-2 text-xs font-semibold text-on-primary"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    {copiedCustomMessage ? 'Copied!' : 'Copy Custom'}
+                  </button>
+                </div>
+                <textarea
+                  rows={6}
+                  value={customMessage}
+                  onChange={(event) => setCustomMessage(event.target.value)}
+                  className="mt-4 w-full rounded-lg border border-outline-variant/10 bg-surface-container-lowest px-4 py-3 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+                <p className="mt-3 text-xs text-on-surface-variant">
+                  This stays client-side. Use it to tailor your share copy before you paste it into Telegram, Signal, or social.
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -387,9 +500,12 @@ export default function ShareHubPage() {
               Download our latest motion graphics and static overlays designed specifically for
               high-conversion Instagram Reels.
             </p>
-            <button className="bg-gradient-to-r from-primary-container to-primary text-on-primary px-8 py-3 rounded-lg font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all">
+            <Link
+              href="/ambassador/campaigns"
+              className="inline-flex bg-gradient-to-r from-primary-container to-primary text-on-primary px-8 py-3 rounded-lg font-bold text-sm hover:scale-[1.02] active:scale-95 transition-all"
+            >
               Browse Campaign Assets
-            </button>
+            </Link>
           </div>
           <div className="md:w-1/3 h-64 md:h-auto self-stretch bg-surface-container-high flex items-center justify-center">
             <Share2 className="w-16 h-16 text-primary/20" />

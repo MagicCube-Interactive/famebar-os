@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
+import { AccessError, requireAdminActor } from '@/lib/server/auth-guards';
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -39,10 +39,9 @@ export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SettlementResponse>> {
   try {
+    const { supabase } = await requireAdminActor();
     const body = (await request.json()) as SettlementRequest;
     const { orderId, daysOld } = body;
-
-    const supabase = createAdminClient();
 
     if (orderId) {
       // Settle specific order
@@ -53,6 +52,18 @@ export async function POST(
       return await settleBatch(supabase, days);
     }
   } catch (error) {
+    if (error instanceof AccessError) {
+      return NextResponse.json(
+        {
+          success: false,
+          settledCount: 0,
+          totalCommissionReleased: 0,
+          totalTokensReleased: 0,
+          error: error.message,
+        },
+        { status: error.status }
+      );
+    }
     console.error('Settlement processing error:', error);
     return NextResponse.json(
       {

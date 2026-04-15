@@ -67,7 +67,7 @@ export function getSettlementWindow(): number {
  * Determine if an order is eligible for settlement
  *
  * An order can be settled if:
- * 1. Payment status is 'completed'
+ * 1. Payment status is 'paid'
  * 2. Settlement status is 'pending'
  * 3. Order was created at least SETTLEMENT_WINDOW_DAYS ago
  *
@@ -82,7 +82,7 @@ export function getSettlementWindow(): number {
  */
 export function isOrderSettleable(order: Order): boolean {
   // Must be successfully paid
-  if (order.paymentStatus !== 'completed') {
+  if (order.paymentStatus !== 'paid') {
     return false;
   }
 

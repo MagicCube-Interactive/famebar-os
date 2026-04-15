@@ -9,6 +9,7 @@ interface Order {
   id: string;
   buyer: string;
   ambassador_code: string;
+  order_type: string;
   total: number;
   payment_status: string;
   settlement_status: string;
@@ -43,7 +44,7 @@ export default function OrdersPage() {
     const safe = createSafeClient();
     const { data } = await safe
       .from('orders')
-      .select('id, ambassador_code, total, payment_status, settlement_status, created_at, buyer_id, profiles!orders_buyer_id_fkey(full_name)')
+      .select('id, ambassador_code, order_type, total, payment_status, settlement_status, created_at, buyer_id, profiles!orders_buyer_id_fkey(full_name)')
       .order('created_at', { ascending: false })
       .limit(100);
 
@@ -52,6 +53,7 @@ export default function OrdersPage() {
         id: o.id,
         buyer: o.profiles?.full_name || o.buyer_id?.slice(0, 8) || '—',
         ambassador_code: o.ambassador_code,
+        order_type: o.order_type || 'retail',
         total: Number(o.total),
         payment_status: o.payment_status,
         settlement_status: o.settlement_status,
@@ -172,6 +174,15 @@ export default function OrdersPage() {
       },
     },
     { key: 'buyer', label: 'Buyer', sortable: true },
+    {
+      key: 'order_type',
+      label: 'Type',
+      render: (v) => (
+        <span className="capitalize text-on-surface-variant">
+          {String(v).replace(/_/g, ' ')}
+        </span>
+      ),
+    },
     { key: 'ambassador_code', label: 'Ambassador Code', render: (v) => <span className="font-mono text-primary-fixed-dim">{String(v)}</span> },
     { key: 'total', label: 'Total', sortable: true, render: (v) => <span className="text-secondary font-semibold">${Number(v).toFixed(2)}</span> },
     {

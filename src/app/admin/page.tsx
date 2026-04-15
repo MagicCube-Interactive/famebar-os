@@ -25,7 +25,6 @@ export default function AdminOverview() {
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'realtime' | 'historical'>('realtime');
-  const [command, setCommand] = useState('');
   const [settlementLoading, setSettlementLoading] = useState(false);
   const [notification, setNotification] = useState<{
     type: 'success' | 'error';
@@ -490,7 +489,7 @@ export default function AdminOverview() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                      <Link href="/admin/cash-ledger" className="text-gray-500 hover:text-on-surface text-sm">View</Link>
                     </td>
                   </tr>
                   {/* Pending commissions row */}
@@ -506,7 +505,7 @@ export default function AdminOverview() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                      <Link href="/admin/cash-ledger" className="text-gray-500 hover:text-on-surface text-sm">View</Link>
                     </td>
                   </tr>
                   {/* Available commissions row */}
@@ -522,7 +521,7 @@ export default function AdminOverview() {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                      <Link href="/admin/cash-ledger" className="text-gray-500 hover:text-on-surface text-sm">View</Link>
                     </td>
                   </tr>
                   {/* Refunds row (if any) */}
@@ -539,7 +538,7 @@ export default function AdminOverview() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <button className="text-gray-500 hover:text-on-surface text-sm">...</button>
+                        <Link href="/admin/orders" className="text-gray-500 hover:text-on-surface text-sm">View</Link>
                       </td>
                     </tr>
                   )}
@@ -681,10 +680,9 @@ export default function AdminOverview() {
               <span className="text-primary-fixed-dim font-mono text-xs mr-2">&gt;</span>
               <input
                 type="text"
-                value={command}
-                onChange={(e) => setCommand(e.target.value)}
-                className="bg-transparent border-none focus:ring-0 focus:outline-none text-xs font-mono w-full text-on-surface p-0"
-                placeholder="Enter ops command..."
+                disabled
+                className="bg-transparent border-none focus:ring-0 focus:outline-none text-xs font-mono w-full text-on-surface/50 p-0 disabled:cursor-not-allowed"
+                placeholder="Read-only: use Commerce Hub and Finance actions for live operations"
               />
             </div>
           </div>

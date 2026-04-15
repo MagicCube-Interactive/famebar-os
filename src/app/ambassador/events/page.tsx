@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { canViewAmbassadorPages } from '@/types';
 import { Calendar, MapPin, Users, Zap, Clock } from 'lucide-react';
@@ -8,11 +8,7 @@ import { Calendar, MapPin, Users, Zap, Clock } from 'lucide-react';
 export default function EventsPage() {
   const { userProfile } = useAuthContext();
 
-  if (!userProfile || !canViewAmbassadorPages(userProfile)) {
-    return null;
-  }
-
-  const events = [
+  const [events, setEvents] = useState([
     {
       id: 1,
       name: 'Building Your 6-Figure Network',
@@ -52,10 +48,22 @@ export default function EventsPage() {
       attendees: 150,
       speakers: ['Global Leadership Team'],
     },
-  ];
+  ]);
 
   const pastEventCount = 5;
   const earnedFromEvents = 2500;
+
+  const toggleRsvp = (eventId: number) => {
+    setEvents((current) =>
+      current.map((event) =>
+        event.id === eventId ? { ...event, rsvpd: !event.rsvpd } : event
+      )
+    );
+  };
+
+  if (!userProfile || !canViewAmbassadorPages(userProfile)) {
+    return null;
+  }
 
   return (
     <div className="space-y-6">
@@ -140,6 +148,7 @@ export default function EventsPage() {
                 </div>
 
                 <button
+                  onClick={() => toggleRsvp(event.id)}
                   className={`whitespace-nowrap rounded-lg px-6 py-2.5 font-semibold transition-all duration-200 ${
                     event.rsvpd
                       ? 'border border-emerald-500/50 bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'

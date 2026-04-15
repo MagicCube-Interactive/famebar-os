@@ -13,12 +13,12 @@
 /**
  * User roles within the FameClub platform
  */
-export type UserRole = 'ambassador' | 'admin';
+export type UserRole = 'buyer' | 'ambassador' | 'admin';
 
 /**
  * Order payment status lifecycle
  */
-export type OrderStatus = 'pending' | 'completed' | 'failed' | 'cancelled';
+export type OrderStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
 
 /**
  * Commission settlement and clawback states
@@ -36,6 +36,11 @@ export type TokenStatus = 'pending' | 'available' | 'spent' | 'clawedback';
 export type SettlementStatus = 'pending' | 'settled' | 'refunded' | 'clawedback';
 
 /**
+ * Commercial order types
+ */
+export type OrderType = 'retail' | 'consignment_sale' | 'wholesale_pack';
+
+/**
  * Ambassador rank/tier levels (0-6, where higher tier = deeper in network)
  */
 export type AmbassadorRank = 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -44,6 +49,13 @@ export type AmbassadorRank = 0 | 1 | 2 | 3 | 4 | 5 | 6;
  * Referral code types
  */
 export type ReferralCodeType = 'primary' | 'campaign' | 'event';
+
+/**
+ * Ambassador pack lifecycle
+ */
+export type PackMode = 'consignment' | 'wholesale';
+export type PackStatus = 'approved' | 'selling' | 'sold_out' | 'settled' | 'paid';
+export type RemittanceMethod = 'ach' | 'zelle' | 'wire';
 
 /**
  * Campaign and event statuses
@@ -102,11 +114,17 @@ export const PLATFORM_CONFIG = {
   /** Retail price per unit */
   RETAIL_PRICE: 25.00,
 
-  /** $FAME tokens earned per $1 of revenue */
-  TOKENS_PER_DOLLAR: 10,
+  /** $FAME tokens earned per direct unit sold */
+  TOKENS_PER_UNIT: 10,
 
   /** Exchange rate: 1 $FAME = $0.01 */
   FAME_TO_USD: 0.01,
+
+  /** Fixed launch pack size */
+  PACK_QUANTITY: 50,
+
+  /** Wholesale price per unit in maturity phase */
+  WHOLESALE_UNIT_PRICE: 18.75,
 
   /** Minimum $FAME holdings for Hold-to-Save activation */
   HOLD_TO_SAVE_MINIMUM: 10000,
@@ -235,6 +253,29 @@ export interface AmbassadorProfile extends User {
 }
 
 /**
+ * Buyer profile before ambassador promotion
+ */
+export interface BuyerProfile extends User {
+  /** Ambassador who referred this buyer into the ecosystem */
+  referredBy?: string;
+
+  /** $FAME balance held for hold-to-save discounts */
+  fameBalance: number;
+
+  /** Hold-to-save tier derived from fame balance */
+  holdToSaveTier: number;
+
+  /** Number of retail orders placed as a buyer */
+  totalOrders: number;
+
+  /** When the buyer requested ambassador consideration */
+  requestedAmbassadorAt?: string;
+
+  /** When the buyer was promoted to ambassador */
+  promotedAt?: string;
+}
+
+/**
  * Payment methods supported for manual sales recording
  */
 export type PaymentMethod = 'cash' | 'zelle' | 'venmo';
@@ -298,6 +339,15 @@ export interface Order {
   /** Referral code used at purchase (ambassador code that made the sale) */
   ambassadorCode: string;
 
+  /** Source business event driving this order */
+  orderType: OrderType;
+
+  /** Number of units represented by this order */
+  units: number;
+
+  /** Related 50-pack record, if applicable */
+  packId?: string;
+
   /** Payment method (cash, zelle, venmo) */
   paymentMethod?: PaymentMethod;
 
@@ -342,6 +392,9 @@ export interface Order {
 
   /** Refund/clawback reason (if applicable) */
   refundReason?: string;
+
+  /** Freeform metadata for special order handling */
+  metadata?: Record<string, any>;
 }
 
 // ============================================================================
@@ -400,8 +453,8 @@ export interface CommissionEvent {
 }
 
 /**
- * Token rewards earned by ambassadors based on sales volume
- * $FAME tokens: 10 tokens per $1 revenue, can be held for discounts or spent
+ * Token rewards earned by ambassadors based on direct unit sales
+ * $FAME tokens can be held for discounts or spent
  */
 export interface TokenEvent {
   /** Unique token transaction identifier */
@@ -413,7 +466,7 @@ export interface TokenEvent {
   /** Order that generated these tokens */
   orderId: string;
 
-  /** Base tokens earned (order total × 10) */
+  /** Base tokens earned (units × 10) */
   tokensEarned: number;
 
   /** Founder boost multiplier applied (1x or 2x) */
@@ -436,6 +489,62 @@ export interface TokenEvent {
 
   /** Tokens clawed back due to refund */
   clawbackAmount?: number;
+}
+
+/**
+ * Approved 50-pack assigned to an ambassador
+ */
+export interface AmbassadorPack {
+  packId: string;
+  ambassadorId: string;
+  mode: PackMode;
+  quantity: number;
+  status: PackStatus;
+  approvedBy: string;
+  approvedAt: string;
+  referralCodeIssued?: string;
+  unitsSold: number;
+  outstandingUnits: number;
+  cashRetained: number;
+  remittanceDue: number;
+  remittedAmount: number;
+  remittanceBalance: number;
+  purchaseOrderId?: string;
+  notes?: string;
+  paymentReceivedAt?: string;
+  updatedAt: string;
+}
+
+/**
+ * Sale recorded against a consignment pack
+ */
+export interface PackSaleEvent {
+  saleId: string;
+  packId: string;
+  orderId: string;
+  ambassadorId: string;
+  units: number;
+  grossRevenue: number;
+  ambassadorCashEarned: number;
+  remittanceDue: number;
+  paymentMethod: PaymentMethod;
+  customerName?: string;
+  createdAt: string;
+}
+
+/**
+ * Remittance posted against a consignment pack
+ */
+export interface PackRemittance {
+  remittanceId: string;
+  packId: string;
+  ambassadorId: string;
+  amount: number;
+  method: RemittanceMethod;
+  recordedBy: string;
+  reference?: string;
+  notes?: string;
+  createdAt: string;
 }
 
 // ============================================================================
@@ -852,6 +961,13 @@ export interface MutationResponse<T> {
  */
 export function isAmbassador(user: User): user is AmbassadorProfile {
   return user.role === 'ambassador';
+}
+
+/**
+ * Type guard to check if user is a buyer
+ */
+export function isBuyer(user: User): user is BuyerProfile {
+  return user.role === 'buyer';
 }
 
 /**

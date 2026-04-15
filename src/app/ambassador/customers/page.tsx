@@ -13,9 +13,13 @@ interface OrderRecord {
   subtotal: number;
   payment_status: string;
   settlement_status: string;
-  payment_method: string;
-  customer_name: string | null;
-  items: Array<{ quantity: number; productName?: string; product_name?: string }>;
+  items: Array<{
+    quantity: number;
+    productName?: string;
+    product_name?: string;
+    paymentMethod?: string;
+    customerName?: string | null;
+  }>;
   created_at: string;
 }
 
@@ -31,23 +35,10 @@ export default function CustomersPage() {
       const safeSupa = createSafeClient();
       const userId = user.id;
 
-      // First get ambassador's referral code (via safe client to bypass RLS)
-      const { data: ambProfile } = await safeSupa
-        .from('ambassador_profiles')
-        .select('referral_code')
-        .eq('id', userId)
-        .single();
-
-      if (!ambProfile?.referral_code) {
-        setLoading(false);
-        return;
-      }
-
-      // Then fetch orders using that referral code (via safe client to bypass RLS)
       const { data: ordersData } = await safeSupa
         .from('orders')
         .select('*')
-        .eq('ambassador_code', ambProfile.referral_code)
+        .eq('ambassador_id', userId)
         .order('created_at', { ascending: false });
 
       if (ordersData) {
@@ -104,13 +95,23 @@ export default function CustomersPage() {
     return map[method.toLowerCase()] || method;
   }
 
+  function getPaymentMethod(order: OrderRecord): string | null {
+    return order.items?.[0]?.paymentMethod || null;
+  }
+
+  function getCustomerName(order: OrderRecord): string {
+    return order.items?.[0]?.customerName || 'Walk-in';
+  }
+
   /** Badge color for payment status */
   function statusBadge(status: string) {
     switch (status) {
-      case 'completed':
+      case 'paid':
         return 'bg-green-500/20 text-green-400';
       case 'pending':
         return 'bg-fuchsia-500/20 text-fuchsia-400';
+      case 'refunded':
+        return 'bg-red-500/20 text-red-400';
       case 'failed':
         return 'bg-red-500/20 text-red-400';
       case 'cancelled':
@@ -232,7 +233,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-6 py-4">
                       <p className="font-medium text-on-surface">
-                        {order.customer_name || 'Walk-in'}
+                        {getCustomerName(order)}
                       </p>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -247,7 +248,7 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <span className="text-sm text-on-surface-variant">
-                        {formatPaymentMethod(order.payment_method)}
+                        {formatPaymentMethod(getPaymentMethod(order))}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-center">
